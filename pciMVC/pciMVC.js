@@ -87,7 +87,20 @@
         }
     };
 
-    console.log(getDeepData({a: {b: 'dd'}}, ['a', 'b']));
+    var safeInsertData = function (root, keylist, value) {
+        initialDataStructure(root, keylist);
+        var targetDataItem = getDeepData(root, keylist);
+        if (targetDataItem === undefined) {
+            setDeepData(root, keylist, value);
+        } else if (targetDataItem instanceof Object && !(targetDataItem instanceof Array)) {
+            var tempArray = [];
+            tempArray.push(targetDataItem);
+            tempArray.push(value);
+            setDeepData(root, keylist, tempArray);
+        } else if (targetDataItem instanceof Array && !(targetDataItem instanceof Object)) {
+            targetDataItem.push(value);
+        }
+    };
 
     return {
         View: {
@@ -96,8 +109,18 @@
                 var groupName = attr['groupName'];
                 var widget_list = [];
                 var id = id_generate();
+                var data_list = [];
 
                 return {
+                    addData: function (data) {
+                        data_list.push(data);
+                        return data;
+                    },
+
+                    getDatas: function () {
+                        return data_list;
+                    },
+
                     addWidget: function (widget) {
                         widget_list.push(widget);
                         return widget;
@@ -211,11 +234,7 @@
                                 //组件放入容器中
                             }
                             if (child['category'] === 'data') {
-                                if (typeof data['groupName'] === 'string') {
-                                    form.addItem(data['groupName'] + '.' + child['name'], child['value'], data['groupName']);
-                                } else {
-                                    form.addItem(child['name'], child['value']);
-                                }
+                                ul_content.addData(child);
                                 //纯值生成Item对象存入Form中
                             }
 
@@ -242,14 +261,23 @@
                 for (var container_id in containers) {
                     var container = containers[container_id];
                     container.insertHtmlDom();
-                    container.instant(function (parsedWidget) {
-                        if (typeof container.getGroupName() === 'string') {
-                            form.addItem(container.getGroupName() + '.' + parsedWidget.getKey(), parsedWidget);
-                        } else {
-                            form.addItem(parsedWidget.getKey(), parsedWidget);
-                        }
-                        //将widget放在Item存入Form
-                    });
+                    if (typeof container.getGroupName() === 'string') {
+                        var itemsInGroup = {};
+                        container.instant(function (parsedWidget) {
+                            safeInsertData(itemsInGroup, parsedWidget.getKey().split('.'), pciMVC.Model.Item(parsedWidget));
+                        });
+                        container.getDatas().forEach(function(data){
+                            safeInsertData(itemsInGroup, data.name.split('.'), pciMVC.Model.Item(data.value));
+                        });
+                        form.addItemByGroup(container.getGroupName(),itemsInGroup);
+                    } else {
+                        container.instant(function (parsedWidget) {
+                            form.addItem(parsedWidget.getKey(), parsedWidget); //将widget放在Item存入Form
+                        });
+                        container.getDatas().forEach(function(data){
+                            form.addItem(data.name, data.value);
+                        });
+                    }
                 }
 
                 return {
@@ -257,13 +285,14 @@
                         return form;
                     },
                     dynamicAdd: function (containerName, item) {
+                        //todo
                         var container = containers[containerName];
                         if (item['category'] === 'widget') {
 
                         }
                         if (item['category'] === 'data') {
                             if (typeof container['groupName'] === 'string') {
-                                form.addItemInGroup(item['name'], item['value'], container['groupName']);
+                                form.addItemByGroup(container['groupName'], item['value']);
                             } else {
                                 form.addItem(item['name'], item['value']);
                             }
@@ -291,31 +320,23 @@
                 };
 
 
-                var safeInsertItem = function (keylist, itemValue) {
-                    initialDataStructure(items, keylist);
-                    var targetDataItem = getDeepData(items, keylist);
-                    if (targetDataItem === undefined) {
-                        setDeepData(items, keylist, itemValue);
-                    } else if (targetDataItem instanceof Object && !(targetDataItem instanceof Array)) {
-                        var tempArray = [];
-                        tempArray.push(targetDataItem);
-                        tempArray.push(itemValue);
-                        setDeepData(items, keylist, tempArray);
-                    } else if (targetDataItem instanceof Array && !(targetDataItem instanceof Object)) {
-                        targetDataItem.push(itemValue);
-                    }
-
-                };
-
                 return {
                     addItem: function (key, value) {
                         var keylist = key.split('.');
-                        safeInsertItem(keylist, pciMVC.Model.Item(value));
+                        safeInsertData(items, keylist, pciMVC.Model.Item(value));
                     },
 
-                    addItemInGroup: function (key, value, groupName) {
-                        items[groupName] || (items[groupName] = {});
-                        items[groupName][key] = pciMVC.Model.Item(value);
+                    addItemByGroup: function (groupName, groupValue) {
+                        if (items[groupName] === undefined){
+                            items[groupName] = groupValue;
+                        }else if (items[groupName] instanceof Object && !(items[groupName] instanceof Array)) {
+                            var tempArray = [];
+                            tempArray.push(items[groupName]);
+                            tempArray.push(groupValue);
+                            items[groupName] = tempArray;
+                        } else if (items[groupName] instanceof Array && !(items[groupName] instanceof Object)) {
+                            items[groupName].push(groupValue);
+                        }
                     },
 
                     getItems: function () {
@@ -326,9 +347,9 @@
 
             },
             Item: function (data) {
-                if (data.getType() === 'widget') {
+                if (data.getType && data.getType() === 'widget') {
                     return (function (data) {
-                        return data.getWidget();
+                        return data;
                     }(data))
                 } else {
                     return (function (data) {
