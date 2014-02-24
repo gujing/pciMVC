@@ -190,6 +190,8 @@
                         attrs.initialize();
                     },
                     setRequired: function (flag) {
+                        console.log(attrs.id);
+                        console.log(flag);
                         PJF.html.displayArea("star_" + attrs.id, flag);
                         if (attrs['widget'].setRequired) {
                             attrs['widget'].setRequired(flag);
@@ -213,6 +215,17 @@
                     },
                     getType: function () {
                         return 'widget';
+                    },
+                    excute: function (funcname) {
+                        if (typeof funcname === 'string') {
+                            var args = Array.prototype.slice.call(arguments);
+                            args.shift();
+                            if (this.hasOwnProperty(funcname)) {
+                                this[funcname](args);
+                            }else{
+                                attrs['widget'][funcname](args);
+                            }
+                        }
                     }
                 }
 
@@ -266,15 +279,15 @@
                         container.instant(function (parsedWidget) {
                             safeInsertData(itemsInGroup, parsedWidget.getKey().split('.'), pciMVC.Model.Item(parsedWidget));
                         });
-                        container.getDatas().forEach(function(data){
+                        container.getDatas().forEach(function (data) {
                             safeInsertData(itemsInGroup, data.name.split('.'), pciMVC.Model.Item(data.value));
                         });
-                        form.addItemByGroup(container.getGroupName(),itemsInGroup);
+                        form.addItemByGroup(container.getGroupName(), itemsInGroup);
                     } else {
                         container.instant(function (parsedWidget) {
                             form.addItem(parsedWidget.getKey(), parsedWidget); //将widget放在Item存入Form
                         });
-                        container.getDatas().forEach(function(data){
+                        container.getDatas().forEach(function (data) {
                             form.addItem(data.name, data.value);
                         });
                     }
@@ -327,9 +340,9 @@
                     },
 
                     addItemByGroup: function (groupName, groupValue) {
-                        if (items[groupName] === undefined){
+                        if (items[groupName] === undefined) {
                             items[groupName] = groupValue;
-                        }else if (items[groupName] instanceof Object && !(items[groupName] instanceof Array)) {
+                        } else if (items[groupName] instanceof Object && !(items[groupName] instanceof Array)) {
                             var tempArray = [];
                             tempArray.push(items[groupName]);
                             tempArray.push(groupValue);

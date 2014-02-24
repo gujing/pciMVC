@@ -27,5 +27,6 @@ PJF.html.bodyReady(function () {
     ]};
 
     var form = pciMVC.Model.instantForm(view);
-    console.log(form.getForm().getItems());
+    var txf = form.getForm().getItems()['grp']['input'][0];
+    txf.excute('setRequired',false);
 });
