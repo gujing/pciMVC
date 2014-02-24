@@ -19,9 +19,8 @@ PJF.html.bodyReady(function () {
         },
         {
             category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp', children: [
-            {
-                category: 'widget', attr: {desc: '文本框2', required: true, type: 'textfield', name: 'input'}
-            }
+            {category: 'widget', attr: {desc: '文本框2', required: true, type: 'textfield', name: 'input'}},
+            {category: 'widget', attr: {desc: '文本框3', required: true, type: 'textfield', name: 'input2'}}
         ]
         }
     ]};
