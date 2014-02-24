@@ -53,6 +53,41 @@
         return source;
     };
 
+    //初始化对象层级结构
+    var initialDataStructure = function (item, keylist, cursor) {
+        cursor || (cursor = 0);
+        if (keylist.length > cursor + 1) {
+            var key = keylist[cursor];
+            item[key] || (item[key] = {});
+            cursor += 1;
+            initialDataStructure(item[key], keylist, cursor);
+        }
+    };
+
+    //获取深层对象
+    var getDeepData = function (data, keylist, cursor) {
+        cursor || (cursor = 0);
+        if (keylist.length > cursor + 1) {
+            var currentData = data[keylist[cursor]];
+            cursor += 1;
+            return getDeepData(currentData, keylist, cursor);
+        } else {
+            return data[keylist[cursor]];
+        }
+    };
+
+    var setDeepData = function (data, keylist, value, cursor) {
+        cursor || (cursor = 0);
+        if (keylist.length == cursor + 1) {
+            data[keylist[cursor]] = value;
+        } else {
+            var upperData = data[keylist[cursor]];
+            cursor += 1;
+            setDeepData(upperData, keylist, value, cursor);
+        }
+    };
+
+    console.log(getDeepData({a: {b: 'dd'}}, ['a', 'b']));
 
     return {
         View: {
@@ -60,6 +95,7 @@
                 var el = attr['el'];
                 var groupName = attr['groupName'];
                 var widget_list = [];
+                var id = id_generate();
 
                 return {
                     addWidget: function (widget) {
@@ -86,14 +122,18 @@
                         }
                     },
 
-                    dynamicAddWidget:function(widget){
+                    dynamicAddWidget: function (widget) {
                         widget_list.push(widget);
-                        PJF.html.append(el,'<li>' + widget.extractHtmlContent() + '</li>');
+                        PJF.html.append(el, '<li>' + widget.extractHtmlContent() + '</li>');
                         widget.instant();
                     },
 
-                    getGroupName:function(){
+                    getGroupName: function () {
                         return groupName;
+                    },
+
+                    getId: function () {
+                        return id;
                     }
                 }
 
@@ -172,7 +212,7 @@
                             }
                             if (child['category'] === 'data') {
                                 if (typeof data['groupName'] === 'string') {
-                                    form.addItemInGroup(child['name'], child['value'], data['groupName']);
+                                    form.addItem(data['groupName'] + '.' + child['name'], child['value'], data['groupName']);
                                 } else {
                                     form.addItem(child['name'], child['value']);
                                 }
@@ -180,7 +220,7 @@
                             }
 
                         }
-                        containers[data['el']] = ul_content;
+                        containers[ul_content.getId()] = ul_content;
                     }
                 };
 
@@ -199,12 +239,12 @@
 
                 parseMetaData(data);
 
-                for (var el in containers) {
-                    var container = containers[el];
+                for (var container_id in containers) {
+                    var container = containers[container_id];
                     container.insertHtmlDom();
-                    container.instant(function(parsedWidget){
+                    container.instant(function (parsedWidget) {
                         if (typeof container.getGroupName() === 'string') {
-                            form.addItemInGroup(parsedWidget.getKey(), parsedWidget, container.getGroupName());
+                            form.addItem(container.getGroupName() + '.' + parsedWidget.getKey(), parsedWidget);
                         } else {
                             form.addItem(parsedWidget.getKey(), parsedWidget);
                         }
@@ -216,12 +256,12 @@
                     getForm: function () {
                         return form;
                     },
-                    dynamicAdd:function (containerName, item){
+                    dynamicAdd: function (containerName, item) {
                         var container = containers[containerName];
-                        if(item['category'] === 'widget'){
+                        if (item['category'] === 'widget') {
 
                         }
-                        if(item['category'] === 'data'){
+                        if (item['category'] === 'data') {
                             if (typeof container['groupName'] === 'string') {
                                 form.addItemInGroup(item['name'], item['value'], container['groupName']);
                             } else {
@@ -250,9 +290,27 @@
                     }
                 };
 
+
+                var safeInsertItem = function (keylist, itemValue) {
+                    initialDataStructure(items, keylist);
+                    var targetDataItem = getDeepData(items, keylist);
+                    if (targetDataItem === undefined) {
+                        setDeepData(items, keylist, itemValue);
+                    } else if (targetDataItem instanceof Object && !(targetDataItem instanceof Array)) {
+                        var tempArray = [];
+                        tempArray.push(targetDataItem);
+                        tempArray.push(itemValue);
+                        setDeepData(items, keylist, tempArray);
+                    } else if (targetDataItem instanceof Array && !(targetDataItem instanceof Object)) {
+                        targetDataItem.push(itemValue);
+                    }
+
+                };
+
                 return {
                     addItem: function (key, value) {
-                        items[key] = pciMVC.Model.Item(value);
+                        var keylist = key.split('.');
+                        safeInsertItem(keylist, pciMVC.Model.Item(value));
                     },
 
                     addItemInGroup: function (key, value, groupName) {
