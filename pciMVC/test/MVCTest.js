@@ -29,4 +29,5 @@ PJF.html.bodyReady(function () {
     var form = pciMVC.Model.instantForm(view);
     var txf = form.getForm().getItems()['grp']['input'][0];
     txf.excute('setRequired',false);
+    txf.excute('disabled',false);
 });

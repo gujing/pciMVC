@@ -197,16 +197,6 @@
                             attrs['widget'].setRequired(flag);
                         }
                     },
-                    setDisabled: function (flag) {
-                        if (attrs['widget'].disabled) {
-                            attrs['widget'].disabled(flag);
-                        }
-                    },
-                    setReadOnly: function (flag) {
-                        if (attrs['widget'].setReadOnly) {
-                            attrs['widget'].setReadOnly(flag);
-                        }
-                    },
                     getKey: function () {
                         return attrs['name'];
                     },
@@ -221,9 +211,9 @@
                             var args = Array.prototype.slice.call(arguments);
                             args.shift();
                             if (this.hasOwnProperty(funcname)) {
-                                this[funcname](args);
+                                this[funcname].apply(this, args);
                             }else{
-                                attrs['widget'][funcname](args);
+                                attrs['widget'][funcname].apply(attrs['widget'],args);
                             }
                         }
                     }
