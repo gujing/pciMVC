@@ -32,14 +32,14 @@ PJF.html.bodyReady(function () {
     txf.execute('disabled',false);
 
     form.add({
-        category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp1', children: [
+        category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp2', children: [
             {category: 'widget', attr: {desc: '文本框21', required: true, type: 'textfield', name: 'input'}},
             {category: 'widget', attr: {desc: '文本框21', required: true, type: 'textfield', name: 'input'}},
             {category: 'widget', attr: {desc: '文本框31', required: true, type: 'textfield', name: 'input2'}}
         ]
     });
 
-    form.executeInGroup('grp','setRequired',false);
+    form.executeInGroup('grp2','setRequired',false);
 
     console.log(form.getForm().getItems());
 });

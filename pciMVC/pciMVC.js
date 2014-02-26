@@ -93,7 +93,7 @@
             for (var i = 0; i < data.length; i++) {
                 iterateWidget(data[i], args);
             }
-        } else if (data.hasOwnProperty('execute') && data['execute'] instanceof Function) { //检查对象是否具有execute方法，如果是包含widget对象的对象，则继续遍历
+        } else if (data.getType() === 'widget') { //检查对象是widget对象，如果是包含widget对象的对象，则继续遍历
             data.execute.apply(data, args);
         } else {
             for (var key in data) {
@@ -193,8 +193,6 @@
                         attrs.initialize();
                     },
                     setRequired: function (flag) {
-                        console.log(attrs.id);
-                        console.log(flag);
                         PJF.html.displayArea("star_" + attrs.id, flag);
                         if (attrs['widget'].setRequired) {
                             attrs['widget'].setRequired(flag);
