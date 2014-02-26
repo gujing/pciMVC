@@ -28,8 +28,8 @@ PJF.html.bodyReady(function () {
 
     var form = pciMVC.Model.instantForm(view);
     var txf = form.getForm().getItems()['grp']['input'][0];
-    txf.excute('setRequired',false);
-    txf.excute('disabled',false);
+    txf.execute('setRequired',false);
+    txf.execute('disabled',false);
 
     form.add({
         category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp1', children: [
@@ -38,6 +38,8 @@ PJF.html.bodyReady(function () {
             {category: 'widget', attr: {desc: '文本框31', required: true, type: 'textfield', name: 'input2'}}
         ]
     });
+
+    form.executeInGroup('grp','setRequired',false);
 
     console.log(form.getForm().getItems());
 });

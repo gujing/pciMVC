@@ -88,6 +88,21 @@
         }
     };
 
+    var iterateWidget = function (data, args) {
+        if (data instanceof Array) {
+            for (var i = 0; i < data.length; i++) {
+                iterateWidget(data[i], args);
+            }
+        } else if (data.hasOwnProperty('execute') && data['execute'] instanceof Function) { //检查对象是否具有execute方法，如果是包含widget对象的对象，则继续遍历
+            data.execute.apply(data, args);
+        } else {
+            for (var key in data) {
+                iterateWidget(data[key], args);
+            }
+        }
+
+    };
+
     return {
         View: {
             UlContent: function (attr) {
@@ -160,7 +175,7 @@
                 };
                 if (attr) {
                     var attrs = mergeAttr(defaultAttr, attr);
-                    if(attr['getValue'] instanceof Function){
+                    if (attr['getValue'] instanceof Function) {
                         var getValueFunc = attr['getValue'];
                     }
                 }
@@ -185,11 +200,11 @@
                             attrs['widget'].setRequired(flag);
                         }
                     },
-                    getValue:function(){
+                    getValue: function () {
                         var value = attrs['widget'];
-                        if(getValueFunc){
+                        if (getValueFunc) {
                             return getValueFunc(value);
-                        }else{
+                        } else {
                             return value;
                         }
                     },
@@ -202,14 +217,14 @@
                     getType: function () {
                         return 'widget';
                     },
-                    excute: function (funcname) {
+                    execute: function (funcname) {
                         if (typeof funcname === 'string') {
                             var args = Array.prototype.slice.call(arguments);
                             args.shift();
                             if (this.hasOwnProperty(funcname)) {
                                 this[funcname].apply(this, args);
-                            }else{
-                                attrs['widget'][funcname].apply(attrs['widget'],args);
+                            } else {
+                                attrs['widget'][funcname].apply(attrs['widget'], args);
                             }
                         }
                     }
@@ -291,6 +306,14 @@
                         var container = parseContainer(data);
                         container.insertHtmlDom();
                         instantContainer(container);
+                    },
+                    executeInGroup: function (groupName, funcname) {
+                        if (arguments.length > 1) {
+                            var args = Array.prototype.slice.call(arguments);
+                            args.shift();
+                            var itemsInGroup = form.getItems()[groupName];
+                            iterateWidget(itemsInGroup,args);
+                        }
                     }
                 }
             },
@@ -352,9 +375,9 @@
                                 data = m_data;
                             },
                             getValue: function () {
-                                if (data instanceof Function){
+                                if (data instanceof Function) {
                                     return data();
-                                }else{
+                                } else {
                                     return data;
                                 }
                             }
