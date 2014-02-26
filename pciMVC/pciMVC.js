@@ -88,6 +88,7 @@
         }
     };
 
+    //遍历对象中的widget对象，并执行方法
     var iterateWidget = function (data, args) {
         if (data instanceof Array) {
             for (var i = 0; i < data.length; i++) {
@@ -270,7 +271,7 @@
 
                 parseMetaData(data);
 
-                function instantContainer(container) {
+                var instantContainer = function (container) {
                     if (typeof container.getGroupName() === 'string') {
                         var itemsInGroup = {};
                         container.instant(function (parsedWidget) {
@@ -288,7 +289,7 @@
                             form.addItem(data.name, data.value);
                         });
                     }
-                }
+                };
 
                 for (var container_id in containers) {
                     var container = containers[container_id];
