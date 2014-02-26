@@ -9,17 +9,16 @@
 }(this, function () {
 
     var widgetEnum = {
-        'textfield': PJF.ui.textfield
-    };
-
-    var widgetAttrsEnum = {
-        'textfield': ['dom', 'id', 'name', 'required', 'onclick']
+        'textfield': PJF.ui.textfield,
+        'dateinput': PJF.ui.dateinput
     };
 
     var template = (function () {
         var templateMap = {};
-        var textFieldTemplate = '<label id="label_{{:id}}">{{:desc}}</label><input id="dom_{{:id}}" type="text"/>'
+        var textFieldTemplate = '<label id="label_{{:id}}">{{:desc}}</label><input id="dom_{{:id}}" type="text"/>';
+        var dateInputTemplate = '<label id="label_{{:id}}">{{:desc}}</label><input id="dom_{{:id}}" type="text"/>';
         templateMap['textfield'] = textFieldTemplate;
+        templateMap['dateinput'] = dateInputTemplate;
 
         return {
             render: function (name, dict) {
@@ -31,19 +30,6 @@
 
     var id_generate = function () {
         return (new Date().getTime()) + '_' + Math.random().toString().substr(2, 5);
-    };
-
-    var filter = function (source, includeList) {
-        var res = {};
-        for (var i = 0; i < includeList.length; i++) {
-            var includeKey = includeList[i];
-            for (var key in source) {
-                if (key === includeKey) {
-                    res[key] = source[key];
-                }
-            }
-        }
-        return res;
     };
 
     var mergeAttr = function (source, extend) {
@@ -174,6 +160,9 @@
                 };
                 if (attr) {
                     var attrs = mergeAttr(defaultAttr, attr);
+                    if(attr['getValue'] instanceof Function){
+                        var getValueFunc = attr['getValue'];
+                    }
                 }
                 return {
                     extractHtmlContent: function () {
@@ -183,10 +172,9 @@
                         return template.render(attrs.type, {'id': attrs.id, 'desc': attrs.desc});
                     },
                     instant: function () {
-                        var attr = filter(attrs, widgetAttrsEnum[attrs.type]);
-                        console.log(attr);
+                        console.log(attrs);
                         attrs['label'] = new PJF.ui.label({dom: 'label_' + attrs.id});
-                        attrs['widget'] = new widgetEnum[attrs.type](attr);
+                        attrs['widget'] = new widgetEnum[attrs.type](attrs);
                         attrs.initialize();
                     },
                     setRequired: function (flag) {
@@ -195,6 +183,14 @@
                         PJF.html.displayArea("star_" + attrs.id, flag);
                         if (attrs['widget'].setRequired) {
                             attrs['widget'].setRequired(flag);
+                        }
+                    },
+                    getValue:function(){
+                        var value = attrs['widget'];
+                        if(getValueFunc){
+                            return getValueFunc(value);
+                        }else{
+                            return value;
                         }
                     },
                     getKey: function () {
@@ -361,7 +357,11 @@
                                 data = m_data;
                             },
                             getValue: function () {
-                                return data;
+                                if (data instanceof Function){
+                                    return data();
+                                }else{
+                                    return data;
+                                }
                             }
                         }
                     })(data)
