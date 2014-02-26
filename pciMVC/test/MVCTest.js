@@ -30,4 +30,14 @@ PJF.html.bodyReady(function () {
     var txf = form.getForm().getItems()['grp']['input'][0];
     txf.excute('setRequired',false);
     txf.excute('disabled',false);
+
+    form.add({
+        category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp1', children: [
+            {category: 'widget', attr: {desc: '文本框21', required: true, type: 'textfield', name: 'input'}},
+            {category: 'widget', attr: {desc: '文本框21', required: true, type: 'textfield', name: 'input'}},
+            {category: 'widget', attr: {desc: '文本框31', required: true, type: 'textfield', name: 'input2'}}
+        ]
+    });
+
+    console.log(form.getForm().getItems());
 });

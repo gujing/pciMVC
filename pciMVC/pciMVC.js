@@ -229,17 +229,16 @@
                         for (var i = 0; i < data['children'].length; i++) {
                             var child = data['children'][i];
                             if (child['category'] === 'widget') {
-                                ul_content.addWidget(parseWidget(child));
-                                //组件放入容器中
+                                ul_content.addWidget(parseWidget(child));  //组件放入容器中
                             }
                             if (child['category'] === 'data') {
-                                ul_content.addData(child);
-                                //纯值生成Item对象存入Form中
+                                ul_content.addData(child); //纯值生成Item对象存入Form中
                             }
 
                         }
                         containers[ul_content.getId()] = ul_content;
                     }
+                    return ul_content;
                 };
 
                 var parseWidget = function (data) {
@@ -248,6 +247,7 @@
 
                 var parseMetaData = function (data) {
                     if (data['category'] === 'form') {
+
                         for (var i = 0; i < data['children'].length; i++) {
                             var metaData = data['children'][i];
                             parseContainer(metaData);
@@ -257,9 +257,7 @@
 
                 parseMetaData(data);
 
-                for (var container_id in containers) {
-                    var container = containers[container_id];
-                    container.insertHtmlDom();
+                function instantContainer(container) {
                     if (typeof container.getGroupName() === 'string') {
                         var itemsInGroup = {};
                         container.instant(function (parsedWidget) {
@@ -279,23 +277,20 @@
                     }
                 }
 
+                for (var container_id in containers) {
+                    var container = containers[container_id];
+                    container.insertHtmlDom();
+                    instantContainer(container);
+                }
+
                 return {
                     getForm: function () {
                         return form;
                     },
-                    dynamicAdd: function (containerName, item) {
-                        //todo
-                        var container = containers[containerName];
-                        if (item['category'] === 'widget') {
-
-                        }
-                        if (item['category'] === 'data') {
-                            if (typeof container['groupName'] === 'string') {
-                                form.addItemByGroup(container['groupName'], item['value']);
-                            } else {
-                                form.addItem(item['name'], item['value']);
-                            }
-                        }
+                    add: function (data) {
+                        var container = parseContainer(data);
+                        container.insertHtmlDom();
+                        instantContainer(container);
                     }
                 }
             },
