@@ -21,7 +21,7 @@ PJF.html.bodyReady(function () {
             {category: 'widget', attr: {desc: '文本框2', required: true, type: 'textfield', name: 'input'}},
             {category: 'widget', attr: {desc: '文本框2', required: true, type: 'textfield', name: 'input'}},
             {category: 'widget', attr: {desc: '文本框3', required: true, type: 'textfield', name: 'input2'}},
-            {category: 'data', name:'tms',value:'2121212'}
+            {category: 'data', attr:{name:'tms',defaultValue:'2121212'}}
         ]
         }
     ]};
