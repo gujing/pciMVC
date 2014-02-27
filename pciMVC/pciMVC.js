@@ -246,7 +246,7 @@
                                 ul_content.addWidget(parseWidget(child));  //组件放入容器中
                             }
                             if (child['category'] === 'data') {
-                                ul_content.addData(child); //纯值生成Item对象存入Form中
+                                ul_content.addData(child['attr']); //纯值对象的attr放入容器中
                             }
 
                         }
@@ -278,7 +278,7 @@
                             safeInsertData(itemsInGroup, parsedWidget.getKey().split('.'), pciMVC.Model.Item(parsedWidget));
                         });
                         container.getDatas().forEach(function (data) {
-                            safeInsertData(itemsInGroup, data.name.split('.'), pciMVC.Model.Item(data.value));
+                            safeInsertData(itemsInGroup, data.name.split('.'), pciMVC.Model.Item(data));
                         });
                         form.addItemByGroup(container.getGroupName(), itemsInGroup);
                     } else {
@@ -286,7 +286,7 @@
                             form.addItem(parsedWidget.getKey(), parsedWidget); //将widget放在Item存入Form
                         });
                         container.getDatas().forEach(function (data) {
-                            form.addItem(data.name, data.value);
+                            form.addItem(data.name, data);
                         });
                     }
                 };
@@ -369,19 +369,21 @@
                     }(data))
                 } else {
                     return (function (data) {
+                        var value = data.defaultValue;
+                        var getValueFunc = data.getValue;
                         return {
                             setValue: function (m_data) {
-                                data = m_data;
+                                value = m_data;
                             },
                             getValue: function () {
-                                if (data instanceof Function) {
-                                    return data();
+                                if (getValueFunc instanceof Function) {
+                                    return getValueFunc(value);
                                 } else {
-                                    return data;
+                                    return value;
                                 }
                             }
                         }
-                    })(data)
+                    }(data))
                 }
 
             }
