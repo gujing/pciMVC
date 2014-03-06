@@ -345,6 +345,10 @@
                     }
                 };
 
+                var setItemValue = function (object) {
+
+                };
+
                 return {
                     addItem: function (key, value) {
                         var keylist = key.split('.');
