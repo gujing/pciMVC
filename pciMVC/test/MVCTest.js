@@ -1,5 +1,5 @@
 PJF.html.bodyReady(function () {
-    var view = {category: 'form', el: 'form_trans', children: [
+    /*var view = {category: 'form', el: 'form_trans', children: [
         {
             category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp', children: [
             {category: 'widget', attr: {desc: '文本框1', required: true, type: 'textfield', name: 'input'}},
@@ -14,22 +14,37 @@ PJF.html.bodyReady(function () {
             {category: 'data', attr: {name: 'tms', defaultValue: '2121212'}}
         ]
         }
+    ]};*/
+
+    var view = {category: 'form', el: 'form_trans', children: [
+        {
+            category: 'container', type: 'ul', el: 'ul_part1', children: [
+            {category: 'widget', attr: {desc: '文本框1', required: true, type: 'textfield', name: 'test'}},
+            {category: 'widget', attr: {desc: '文本框11', required: true, type: 'textfield', name: 'test1'}}
+        ]
+        },
+        {
+            category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp1', children: [
+            {category: 'widget', attr: {desc: '文本框2', required: true, type: 'textfield', name: 'group1'}},
+            {category: 'widget', attr: {desc: '文本框2', required: true, type: 'textfield', name: 'group2'}}
+        ]
+        }
     ]};
 
     var form = pciMVC.Model.instantForm(view);
-    var txf = form.getForm().getItems()['grp']['input'][0];
+    /*var txf = form.getForm().getItems()['grp']['input'][0];
     txf.execute('setRequired', false);
-    txf.execute('disabled', false);
+    txf.execute('disabled', false);*/
 
-    form.add({
+    /*form.add({
         category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp2', children: [
             {category: 'widget', attr: {desc: '文本框21', required: true, type: 'textfield', name: 'input'}},
             {category: 'widget', attr: {desc: '文本框21', required: true, type: 'textfield', name: 'input'}},
             {category: 'widget', attr: {desc: '文本框31', required: true, type: 'textfield', name: 'input2'}}
         ]
-    });
+    });*/
 
-    form.executeInGroup('grp2', 'setRequired', false);
+//    form.executeInGroup('grp2', 'setRequired', false);
 
     console.log(form.getFormData());
 
