@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title></title>
+</head>
+<body>
+<script type="text/javascript" src="../P2Lib/script/debug-js-0.50b.js"></script>
+<script type="text/javascript">
+    /**
+     * This handler will be called if any error occurs
+     * inside the object that's being debugged.
+     *
+     * @param event {Debugger.DebugEvent} Event data.
+     */
+    function errorHandler(event) {
+        alert("Oops!, you became exceptional: " +
+                event.data.error.message );
+    }
+
+    /* Just a simple object. */
+    var myObject = {
+        foo : function() {
+            // Forces an error: Object 'bar' is undefined.
+            alert(this.bar.foo);
+        }
+    };
+
+    /* Global debugging context object. For more information, see
+     Context class documentation. */
+    Debugger.setGlobalContext(new Debugger.Context(errorHandler));
+
+    /* Initializes the prototype-based attachment mode. */
+    Debugger.setup();
+
+    /* Attach the debugger. It uses the global context. */
+    myObject.debug();
+
+    /* This call will throw an error, so the previously defined
+     error handler is invoked and an alert is displayed to
+     notify the error. */
+    myObject.foo();
+</script>
+</body>
+</html>
