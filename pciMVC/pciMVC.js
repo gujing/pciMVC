@@ -83,7 +83,7 @@
             tempArray.push(targetDataItem);
             tempArray.push(value);
             setDeepData(root, keylist, tempArray);
-        } else if (targetDataItem instanceof Array && !(targetDataItem instanceof Object)) {
+        } else if (targetDataItem instanceof Array) {
             targetDataItem.push(value);
         }
     };
@@ -199,7 +199,7 @@
                         }
                     },
                     getValue: function () {
-                        var value = attrs['widget'];
+                        var value = attrs['widget'].getValue();
                         if (getValueFunc) {
                             return getValueFunc(value);
                         } else {
@@ -300,6 +300,9 @@
                     getForm: function () {
                         return form;
                     },
+                    getFormData: function () {
+                        return form.getItemsData();
+                    },
                     add: function (data) {
                         var container = parseContainer(data);
                         container.insertHtmlDom();
@@ -310,7 +313,7 @@
                             var args = Array.prototype.slice.call(arguments);
                             args.shift();
                             var itemsInGroup = form.getItems()[groupName];
-                            iterateWidget(itemsInGroup,args);
+                            iterateWidget(itemsInGroup, args);
                         }
                     }
                 }
@@ -321,19 +324,26 @@
 
                 var items = {};
 
-                var getItemsValue = function (items, store, groupName) {
-                    for (var key in items) {
-                        if (items[key]['getValue']) {
-                            if (groupName) {
-                                store[groupName] || (store[groupName] = {});
-                                store[groupName][key] = items[key]['getValue']();
-                            }
-                        } else {
-                            getItemsValue(items[key], store, key);
+                var extractItemValue = function (object) {
+                    if (object['getValue']) {
+                        return object['getValue']();
+                    } else if (object instanceof Object && !(object instanceof Array)) {
+                        var objectStore = {};
+                        for (var key in object) {
+                            objectStore[key] = extractItemValue(object[key]);
                         }
+                        return objectStore;
+                    } else if (object instanceof Array) {
+                        var arrayStore = [];
+                        for (var i = 0; i < object.length; i++) {
+                            var obj = object[i];
+                            arrayStore.push(extractItemValue(obj));
+                        }
+                        return arrayStore;
+                    } else {
+                        return {};
                     }
                 };
-
 
                 return {
                     addItem: function (key, value) {
@@ -349,13 +359,17 @@
                             tempArray.push(items[groupName]);
                             tempArray.push(groupValue);
                             items[groupName] = tempArray;
-                        } else if (items[groupName] instanceof Array && !(items[groupName] instanceof Object)) {
+                        } else if (items[groupName] instanceof Array) {
                             items[groupName].push(groupValue);
                         }
                     },
 
                     getItems: function () {
                         return items;
+                    },
+
+                    getItemsData: function () {
+                        return extractItemValue(items);
                     }
                 }
 

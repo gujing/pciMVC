@@ -31,5 +31,7 @@ PJF.html.bodyReady(function () {
 
     form.executeInGroup('grp2', 'setRequired', false);
 
-    console.log(form.getForm().getItems());
+    console.log(form.getFormData());
+
+    var a = {key: 'cust_id', type: 'string', length: '130', required: 'true'}
 });
