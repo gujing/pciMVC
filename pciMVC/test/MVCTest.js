@@ -16,6 +16,7 @@ PJF.html.bodyReady(function () {
      }
      ]};*/
 
+
     var view = {category: 'form', el: 'form_trans', children: [
         {
             category: 'container', type: 'ul', el: 'ul_part1', children: [
@@ -26,7 +27,13 @@ PJF.html.bodyReady(function () {
         {
             category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp1', children: [
             {category: 'widget', attr: {desc: '文本框2', required: true, type: 'textfield', name: 'group1'}},
-            {category: 'widget', attr: {desc: '文本框2', required: true, type: 'textfield', name: 'group2'}}
+            {category: 'widget', attr: {desc: '文本框2', required: true, type: 'textfield', name: 'group2'}},
+            {
+                category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp3', children: [
+                {category: 'widget', attr: {desc: '下拉框', required: true, type: 'selector', name: 'group1', categoryId: '116426'}},
+                {category: 'widget', attr: {desc: 'auto', required: true, type: 'auto', name: 'group2', categoryId: '116341'}}
+            ]
+            }
         ]
         }
     ]};

@@ -10,15 +10,51 @@
 
         var widgetEnum = {
             'textfield': PJF.ui.textfield,
-            'dateinput': PJF.ui.dateinput
+            'dateinput': PJF.ui.dateinput,
+            'selector': PJF.ui.select,
+            'auto': PJF.ui.autoComplete
+        };
+
+        var defaultInitFunc = {
+            'textfield': function () {
+            },
+            'dateinput': function () {
+            },
+            'selector': function () {
+                var that = this;
+                new PJF.communication.getStandardCode({
+                    categoryId: that.categoryId,
+                    appId: that.appId,
+                    clcd: that.clcd,
+                    success: function (data) {
+                        that['widget'].addOptions(reformatStandCode(data, 'selector'));
+                    }
+                })
+
+            },
+            'auto': function () {
+                var that = this;
+                new PJF.communication.getStandardCode({
+                    categoryId: that.categoryId,
+                    appId: that.appId,
+                    clcd: that.clcd,
+                    success: function (data) {
+                        that['widget'].addOptions(reformatStandCode(data, 'auto'));
+                    }
+                })
+            }
         };
 
         var template = (function () {
             var templateMap = {};
             var textFieldTemplate = '<label id="label_{{:id}}">{{:desc}}</label><input id="dom_{{:id}}" type="text"/>';
             var dateInputTemplate = '<label id="label_{{:id}}">{{:desc}}</label><input id="dom_{{:id}}" type="text"/>';
+            var selectorTemplate = '<label id="label_{{:id}}">{{:desc}}</label><span id="dom_{{:id}}" />';
+            var autoTemplate = '<label id="label_{{:id}}">{{:desc}}</label><input id="dom_{{:id}}" type="text"/>';
             templateMap['textfield'] = textFieldTemplate;
             templateMap['dateinput'] = dateInputTemplate;
+            templateMap['selector'] = selectorTemplate;
+            templateMap['auto'] = autoTemplate;
 
             return {
                 render: function (name, dict) {
@@ -30,6 +66,20 @@
 
         var id_generate = function () {
             return (new Date().getTime()) + '_' + Math.random().toString().substr(2, 5);
+        };
+
+        var reformatStandCode = function (standCodes, type) {
+            var formatedData = [];
+            for (var i = 0; i < standCodes.length; i++) {
+                var code = standCodes[i];
+                if (type === 'selector') {
+                    formatedData.push({name: code['itemValue'], desc: code['itemName']});
+                }
+                if (type === 'auto') {
+                    formatedData.push({key: code['itemValue'], value: code['itemName']});
+                }
+            }
+            return formatedData;
         };
 
         var mergeAttr = function (source, extend) {
@@ -50,6 +100,78 @@
             }
         };
 
+
+        var mergeObject = function (obj, toMergeObj) {
+            if (obj['getType'] || toMergeObj['getType']) {
+                throw 'can not merge item';
+            }
+            if (isPureObject(obj) && isPureObject(toMergeObj)) {
+                for (var el in toMergeObj) {
+                    if (obj[el] === undefined) {
+                        obj[el] = toMergeObj[el];
+                    } else {
+                        throw '属性' + el + '冲突';
+                    }
+                }
+            } else {
+                throw 'only obj can be merge';
+            }
+
+        };
+
+        var objectPropertyLength = function (obj)//获得对象上的属性个数，不包含对象原形上的属性
+        {
+            var count = 0;
+            if (obj && typeof obj === "object") {
+                for (var ooo in obj) {
+                    if (obj.hasOwnProperty(ooo)) {
+                        count++;
+                    }
+                }
+                return count;
+            } else {
+                throw new Error("argunment can not be null;");
+            }
+
+        };
+
+        var judgeArrayStructureEqual = function (array, compareArray) {
+            if (array instanceof Array && compareArray instanceof Array && array.length == compareArray.length) {
+                for (var i = 0; i < array.length; i++) {
+                    var result = judgeObjectSturctureEqual(array[i], compareArray[i]);
+                    if (!result) {
+                        return false;
+                    }
+                }
+                return true;
+            } else {
+                return false
+            }
+        };
+
+        var judgeObjectSturctureEqual = function (obj, compareObj) {
+            var objLength = objectPropertyLength(obj), compareObjLength = objectPropertyLength(compareObj);
+            if (objLength != compareObjLength) {
+                return false;
+            } else {
+                for (var el in obj) {
+                    if (obj[el] instanceof Array && compareObj[el] instanceof Array) {
+                        if (!judgeArrayStructureEqual(obj[el], compareObj[el])) {
+                            return false;
+                        }
+                    } else if (obj[el]['getType'] && compareObj[el]['getType']) {
+                        //item 对象
+                    } else if (isPureObject(obj[el]) && isPureObject(compareObj[el])) {
+                        if (!judgeObjectSturctureEqual(obj[el], compareObj[el])) {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        };
         //获取深层对象
         var getDeepData = function (data, keylist, cursor) {
             cursor || (cursor = 0);
@@ -78,11 +200,16 @@
             var targetDataItem = getDeepData(root, keylist);
             if (targetDataItem === undefined) {
                 setDeepData(root, keylist, value);
-            } else if (targetDataItem instanceof Object && !(targetDataItem instanceof Array)) {
-                var tempArray = [];
-                tempArray.push(targetDataItem);
-                tempArray.push(value);
-                setDeepData(root, keylist, tempArray);
+            } else if (isPureObject(targetDataItem)) {
+                if (judgeObjectSturctureEqual(targetDataItem, value)) {
+                    var tempArray = [];
+                    tempArray.push(targetDataItem);
+                    tempArray.push(value);
+                    setDeepData(root, keylist, tempArray);
+                } else {
+                    mergeObject(targetDataItem, value);
+                }
+
             } else if (targetDataItem instanceof Array) {
                 targetDataItem.push(value);
             }
@@ -105,7 +232,7 @@
 
         var isPureObject = function (object) {
             return object instanceof Object && !(object instanceof Array);
-        }
+        };
 
         return {
             View: {
@@ -179,6 +306,7 @@
                     };
                     if (attr) {
                         var attrs = mergeAttr(defaultAttr, attr);
+                        attrs['initialize'] = defaultInitFunc[attrs['type']];
                         if (attr['getValue'] instanceof Function) {
                             var getValueFunc = attr['getValue'];
                         }
@@ -210,7 +338,7 @@
                                 return value;
                             }
                         },
-                        setValue:function(data){
+                        setValue: function (data) {
                             attrs['widget']['setValue'](data);
                         },
                         getKey: function () {
@@ -242,10 +370,13 @@
                     var form = pciMVC.Model.Form();
                     var containers = {};
 
-                    var parseContainer = function (data) {
+                    var parseContainer = function (data, upperGroupName) {
+                        if (upperGroupName) {
+                            data['groupName'] = upperGroupName + '.' + data['groupName'];
+                        }
                         if (data['type'] === 'ul') {
-
                             var ul_content = pciMVC.View.UlContent(data);
+                            containers[ul_content.getId()] = ul_content;
                             for (var i = 0; i < data['children'].length; i++) {
                                 var child = data['children'][i];
                                 if (child['category'] === 'widget') {
@@ -254,9 +385,17 @@
                                 if (child['category'] === 'data') {
                                     ul_content.addData(child['attr']); //纯值对象的attr放入容器中
                                 }
+                                if (child['category'] === 'container') {
+                                    if (typeof ul_content.getGroupName() === 'string') {
+                                        parseContainer(child, ul_content.getGroupName());
+                                    } else {
+                                        throw '上级container的groupName属性不能为空';
+                                    }
+
+                                }
 
                             }
-                            containers[ul_content.getId()] = ul_content;
+
                         }
                         return ul_content;
                     };
@@ -362,20 +501,20 @@
                     };
 
                     var setItemValue = function (items, object) {
-                            for (var key in object) {
-                                if (isPureObject(object[key])) {
-                                    setItemValue(items[key], object[key]);
-                                } else if (object[key] instanceof Array && items[key] instanceof Array) {
-                                    for (var i = 0; i < object[key].length; i++) {
-                                        var obj = object[key][i];
-                                        setItemValue(items[key][i], object[key][i]);
-                                    }
-                                } else {
-                                    safeSetValue(items[key], object[key]);
+                        for (var key in object) {
+                            if (isPureObject(object[key])) {
+                                setItemValue(items[key], object[key]);
+                            } else if (object[key] instanceof Array && items[key] instanceof Array) {
+                                for (var i = 0; i < object[key].length; i++) {
+                                    var obj = object[key][i];
+                                    setItemValue(items[key][i], object[key][i]);
                                 }
+                            } else {
+                                safeSetValue(items[key], object[key]);
                             }
                         }
-                        ;
+                    };
+
 
                     return {
                         addItem: function (key, value) {
@@ -384,16 +523,8 @@
                         },
 
                         addItemByGroup: function (groupName, groupValue) {
-                            if (items[groupName] === undefined) {
-                                items[groupName] = groupValue;
-                            } else if (items[groupName] instanceof Object && !(items[groupName] instanceof Array)) {
-                                var tempArray = [];
-                                tempArray.push(items[groupName]);
-                                tempArray.push(groupValue);
-                                items[groupName] = tempArray;
-                            } else if (items[groupName] instanceof Array) {
-                                items[groupName].push(groupValue);
-                            }
+                            var keylist = groupName.split('.');
+                            safeInsertData(items, keylist, groupValue);
                         },
 
                         getItems: function () {
@@ -421,6 +552,9 @@
                             var value = data.defaultValue;
                             var getValueFunc = data.getValue;
                             return {
+                                getType: function () {
+                                    return 'data';
+                                },
                                 setValue: function (m_data) {
                                     value = m_data;
                                 },
