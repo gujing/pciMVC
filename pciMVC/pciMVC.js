@@ -15,7 +15,7 @@
             'auto': PJF.ui.autoComplete
         };
 
-        var defaultInitFunc = {
+        var defaultPostFunc = {
             'textfield': function () {
             },
             'dateinput': function () {
@@ -23,9 +23,9 @@
             'selector': function () {
                 var that = this;
                 new PJF.communication.getStandardCode({
-                    categoryId: that.categoryId,
-                    appId: that.appId,
-                    clcd: that.clcd,
+                    categoryId: that['pjfAttr'].categoryId,
+                    appId: that['pjfAttr'].appId,
+                    clcd: that['pjfAttr'].clcd,
                     success: function (data) {
                         that['widget'].addOptions(reformatStandCode(data, 'selector'));
                     }
@@ -35,9 +35,9 @@
             'auto': function () {
                 var that = this;
                 new PJF.communication.getStandardCode({
-                    categoryId: that.categoryId,
-                    appId: that.appId,
-                    clcd: that.clcd,
+                    categoryId: that['pjfAttr'].categoryId,
+                    appId: that['pjfAttr'].appId,
+                    clcd: that['pjfAttr'].clcd,
                     success: function (data) {
                         that['widget'].addOptions(reformatStandCode(data, 'auto'));
                     }
@@ -267,10 +267,10 @@
                             PJF.html.append(el, widgetContent);
                         },
 
-                        instant: function (fn) {
+                        instantiate: function (fn) {
                             for (var i = 0; i < widget_list.length; i++) {
                                 var widget = widget_list[i];
-                                widget.instant();
+                                widget.instantiate();
                                 if (fn) {
                                     fn(widget);
                                 }
@@ -280,7 +280,7 @@
                         dynamicAddWidget: function (widget) {
                             widget_list.push(widget);
                             PJF.html.append(el, '<li>' + widget.extractHtmlContent() + '</li>');
-                            widget.instant();
+                            widget.instantiate();
                         },
 
                         getGroupName: function () {
@@ -298,15 +298,17 @@
                     var rootId = id_generate();
                     var defaultAttr = {
                         id: rootId,
-                        dom: "dom_" + rootId,
                         type: 'textfield',
                         desc: '',
+                        postProcessor: function () {
+                        },
                         initialize: function () {
                         }
                     };
-                    if (attr) {
+                    if (attr['pjfAttr']) {
                         var attrs = mergeAttr(defaultAttr, attr);
-                        attrs['initialize'] = defaultInitFunc[attrs['type']];
+                        attrs['pjfAttr']['dom'] = 'dom_' + attrs['id'];
+                        attrs['postProcessor'] = defaultPostFunc[attrs['type']];
                         if (attr['getValue'] instanceof Function) {
                             var getValueFunc = attr['getValue'];
                         }
@@ -318,10 +320,11 @@
                             }
                             return template.render(attrs.type, {'id': attrs.id, 'desc': attrs.desc});
                         },
-                        instant: function () {
+                        instantiate: function () {
                             console.log(attrs);
                             attrs['label'] = new PJF.ui.label({dom: 'label_' + attrs.id});
-                            attrs['widget'] = new widgetEnum[attrs.type](attrs);
+                            attrs['widget'] = new widgetEnum[attrs.type](attrs['pjfAttr']);
+                            attrs.postProcessor();
                             attrs.initialize();
                         },
                         setRequired: function (flag) {
@@ -342,7 +345,7 @@
                             attrs['widget']['setValue'](data);
                         },
                         getKey: function () {
-                            return attrs['name'];
+                            return attrs['pjfAttr']['name'];
                         },
                         getWidget: function () {
                             return attrs['widget'];
@@ -366,7 +369,7 @@
                 }
             },
             Model: {
-                instantForm: function (data) {
+                FormInstantiator: function (data) {
                     var form = pciMVC.Model.Form();
                     var containers = {};
 
@@ -416,10 +419,10 @@
 
                     parseMetaData(data);
 
-                    var instantContainer = function (container) {
+                    var instantiateContainer = function (container) {
                         if (typeof container.getGroupName() === 'string') {
                             var itemsInGroup = {};
-                            container.instant(function (parsedWidget) {
+                            container.instantiate(function (parsedWidget) {
                                 safeInsertData(itemsInGroup, parsedWidget.getKey().split('.'), pciMVC.Model.Item(parsedWidget));
                             });
                             container.getDatas().forEach(function (data) {
@@ -427,7 +430,7 @@
                             });
                             form.addItemByGroup(container.getGroupName(), itemsInGroup);
                         } else {
-                            container.instant(function (parsedWidget) {
+                            container.instantiate(function (parsedWidget) {
                                 form.addItem(parsedWidget.getKey(), parsedWidget); //将widget放在Item存入Form
                             });
                             container.getDatas().forEach(function (data) {
@@ -439,32 +442,19 @@
                     for (var container_id in containers) {
                         var container = containers[container_id];
                         container.insertHtmlDom();
-                        instantContainer(container);
+                        instantiateContainer(container);
                     }
 
                     return {
                         getForm: function () {
                             return form;
                         },
-                        getFormData: function () {
-                            return form.getItemsData();
-                        },
-                        setFormData: function (data) {
-                            form.setItemsData(data);
-                        },
                         add: function (data) {
                             var container = parseContainer(data);
                             container.insertHtmlDom();
-                            instantContainer(container);
-                        },
-                        executeInGroup: function (groupName, funcname) {
-                            if (arguments.length > 1) {
-                                var args = Array.prototype.slice.call(arguments);
-                                args.shift();
-                                var itemsInGroup = form.getItems()[groupName];
-                                iterateWidget(itemsInGroup, args);
-                            }
+                            instantiateContainer(container);
                         }
+
                     }
                 },
 
@@ -531,12 +521,21 @@
                             return items;
                         },
 
-                        getItemsData: function () {
+                        getFormData: function () {
                             return extractItemValue(items);
                         },
 
-                        setItemsData: function (data) {
+                        setFormData: function (data) {
                             setItemValue(items, data);
+                        },
+                        executeInGroup: function (groupName, funcname) {
+                            if (arguments.length > 1) {
+                                var args = Array.prototype.slice.call(arguments);
+                                args.shift();
+                                var keylist = groupName.split('.');
+                                var itemsInGroup = getDeepData(items, keylist);
+                                iterateWidget(itemsInGroup, args);
+                            }
                         }
                     }
 
