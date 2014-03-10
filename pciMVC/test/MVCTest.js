@@ -21,7 +21,7 @@ PJF.html.bodyReady(function () {
     root.view = {category: 'form', el: 'form_trans', children: [
         {
             category: 'container', type: 'ul', el: 'ul_part1', children: [
-            {category: 'widget', attr: {desc: '文本框1',  type: 'textfield', pjfAttr:{name: 'test'}}}
+            {category: 'widget', attr: {desc: '文本框1',  type: 'textfield', getValuePost:function(data){return data+'post'},pjfAttr:{name: 'test'}}}
         ]
         },
         {

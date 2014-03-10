@@ -5,37 +5,35 @@
 [数据描述规则](#anchor2)  
 [API参考](#anchor3)
 ### 修改记录
-修改日期|修改内容|修改人
-------|-------|------
-2014/3/6|0.0.1a发布|古晶
+修改日期|版本号|修改内容|修改人
+------|--|-----|------
+2014/3/6|0.0.1a|发布pciMVC|古晶
+2014/3/10|0.0.2a| 修改widget与item关联关系以适配一个组件对应多个数据项的场景。新增Util模块提供工具类方法，调整widget，data部分属性|古晶
 
 ##[设计思路](id:anchor1)
-通过对数据项的描述代替之前创建组件所需的html代码和JS代码。并提供对于数据通用性操作的统一处理
+通过对数据项的描述代替之前创建组件所需的html代码和JS代码。建立组件与数据项的关联关系，并提供对于数据通用性操作的统一处理。
 
 ##[数据描述规则](id:anchor2)
 数据描述分为四类 form,container,widget,data。示例：
 
 	{category: 'form', el: 'form_trans', children: [
-                {
+        {
             category: 'container', type: 'ul', el: 'ul_part1', children: [
-            {category: 'widget', attr: {desc: '文本框1', required: true, type: 'textfield', name: 'test'}},
-            {category: 'widget', attr: {desc: '文本框11', required: true, type: 'textfield', name: 'test1'}}
+            {category: 'widget', attr: {desc: '文本框1',  type: 'textfield', pjfAttr:{name: 'test'}}}
         ]
         },
         {
             category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp1', children: [
-            {category: 'widget', attr: {desc: '文本框2', required: true, type: 'textfield', name: 'group1'}},
-            {category: 'widget', attr: {desc: '文本框2', required: true, type: 'textfield', name: 'group2'}},
+            {category: 'widget', attr: {desc: '文本框2',  type: 'dateinput', pjfAttr:{name: 'group1'}}},
             {
                 category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp3', children: [
-                {category: 'widget', attr: {desc: '下拉框', required: true, type: 'selector', name: 'group1', categoryId: '116426'}},
-                {category: 'widget', attr: {desc: 'auto', required: true, type: 'auto', name: 'group2', categoryId: '116341'}}
+                {category: 'widget', attr: {desc: '下拉框',  type: 'selector', pjfAttr:{name: 'group1', categoryId: '116426'}}},
+                {category: 'widget', attr: {desc: 'auto',  type: 'auto', pjfAttr:{name: 'group2', categoryId: '116341'}}}
             ]
             }
         ]
         }
-    ]};
-    
+    ]}    
 ###[form](id:anchor21)
 form用于描述提交到后台的数据集合
 
@@ -66,7 +64,8 @@ attr|-|初始化所需属性
 -|desc|组件描述，代替之前代码中label组件
 -|pjfAttr|用于实例化pjf组件所需传入参数（dom属性无需传入）
 -|initialize|(可选)pjf组件实例化完成调用完成额外初始化工作
--|getValue|(可选)重写取值操作，参数为pjf组件getValue方法返回值
+-|getValuePost|(可选)取值后置操作
+-|setValuePre|(可选)设值前置操作
 
 ### data
 data用于描述不在界面上展示的数据项
@@ -77,7 +76,8 @@ category|-|类别定义，此处为data
 attr|-|初始化所需属性
 -|name|数据项对应key值
 -|defaultValue|(可选)默认值
--|getValue|(可选)重写取值操作，参数为当前值
+-|getValuePost|(可选)取值后置操作
+-|setValuePre|(可选)设值前置操作
 
 ## [API参考](id:anchor3)
 ### pciMVC.Model.FormInstantiator
@@ -108,3 +108,10 @@ setValue|data|设值
 getValue|-|取值
 getType|-|返回封装的数据项类型`widget`或`data`
 execute|funcname|widget类型特有方法，用于执行组件方法，`funcname`为要执行操作的方法名，方法所需的参数按次序加入实参中。
+
+### pciMVC.Util
+工具方法模块，提供通用方法
+
+方法名|参数|说明|示例
+----|---|--|
+createNamespace|context,namespace|`context`为需要创建命名空间的根对象，`namespace`为命名空间层级描述。方法返回创建的命名空间|`var root = pciMVC.Util.createNamespace(window, 'pci.test.MVCTest');`

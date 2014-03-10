@@ -1,0 +1,519 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<style>
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+blockquote {
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: "Helvetica Neue", Helvetica, "Hiragino Sans GB", Arial, sans-serif;
+    font-size: 13px;
+    line-height: 18px;
+    color: #737373;
+    background-color: white;
+    margin: 10px 13px 10px 13px;
+}
+table {
+	margin: 10px 0 15px 0;
+	border-collapse: collapse;
+}
+td,th {	
+	border: 1px solid #ddd;
+	padding: 3px 10px;
+}
+th {
+	padding: 5px 10px;	
+}
+
+a {
+    color: #0069d6;
+}
+a:hover {
+    color: #0050a3;
+    text-decoration: none;
+}
+a img {
+    border: none;
+}
+p {
+    margin-bottom: 9px;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    color: #404040;
+    line-height: 36px;
+}
+h1 {
+    margin-bottom: 18px;
+    font-size: 30px;
+}
+h2 {
+    font-size: 24px;
+}
+h3 {
+    font-size: 18px;
+}
+h4 {
+    font-size: 16px;
+}
+h5 {
+    font-size: 14px;
+}
+h6 {
+    font-size: 13px;
+}
+hr {
+    margin: 0 0 19px;
+    border: 0;
+    border-bottom: 1px solid #ccc;
+}
+blockquote {
+    padding: 13px 13px 21px 15px;
+    margin-bottom: 18px;
+    font-family:georgia,serif;
+    font-style: italic;
+}
+blockquote:before {
+    content:"\201C";
+    font-size:40px;
+    margin-left:-10px;
+    font-family:georgia,serif;
+    color:#eee;
+}
+blockquote p {
+    font-size: 14px;
+    font-weight: 300;
+    line-height: 18px;
+    margin-bottom: 0;
+    font-style: italic;
+}
+code, pre {
+    font-family: Monaco, Andale Mono, Courier New, monospace;
+}
+code {
+    background-color: #fee9cc;
+    color: rgba(0, 0, 0, 0.75);
+    padding: 1px 3px;
+    font-size: 12px;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+}
+pre {
+    display: block;
+    padding: 14px;
+    margin: 0 0 18px;
+    line-height: 16px;
+    font-size: 11px;
+    border: 1px solid #d9d9d9;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+pre code {
+    background-color: #fff;
+    color:#737373;
+    font-size: 11px;
+    padding: 0;
+}
+sup {
+    font-size: 0.83em;
+    vertical-align: super;
+    line-height: 0;
+}
+* {
+	-webkit-print-color-adjust: exact;
+}
+@media screen and (min-width: 914px) {
+    body {
+        width: 854px;
+        margin:10px auto;
+    }
+}
+@media print {
+	body,code,pre code,h1,h2,h3,h4,h5,h6 {
+		color: black;
+	}
+	table, pre {
+		page-break-inside: avoid;
+	}
+}
+</style>
+<title>pciMVC功能说明</title>
+
+</head>
+<body>
+<h1>pciMVC功能说明</h1>
+
+<p>目录</p>
+
+<p><a href="#anchor1">设计思路</a><br/>
+<a href="#anchor2">数据描述规则</a><br/>
+<a href="#anchor3">API参考</a></p>
+
+<h3>修改记录</h3>
+
+<table>
+<thead>
+<tr>
+<th>修改日期</th>
+<th>版本号</th>
+<th>修改内容</th>
+<th>修改人</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2014/3/6</td>
+<td>0.0.1a</td>
+<td>发布pciMVC</td>
+<td>古晶</td>
+</tr>
+<tr>
+<td>2014/3/10</td>
+<td>0.0.2a</td>
+<td> 修改widget与item关联关系以适配一个组件对应多个数据项的场景。新增Util模块提供工具类方法，调整widget，data部分属性</td>
+<td>古晶</td>
+</tr>
+</tbody>
+</table>
+
+
+<h2><span id="anchor1">设计思路</span></h2>
+
+<p>通过对数据项的描述代替之前创建组件所需的html代码和JS代码。建立组件与数据项的关联关系，并提供对于数据通用性操作的统一处理。</p>
+
+<h2><span id="anchor2">数据描述规则</span></h2>
+
+<p>数据描述分为四类 form,container,widget,data。示例：</p>
+
+<pre><code>{category: 'form', el: 'form_trans', children: [
+    {
+        category: 'container', type: 'ul', el: 'ul_part1', children: [
+        {category: 'widget', attr: {desc: '文本框1',  type: 'textfield', pjfAttr:{name: 'test'}}}
+    ]
+    },
+    {
+        category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp1', children: [
+        {category: 'widget', attr: {desc: '文本框2',  type: 'dateinput', pjfAttr:{name: 'group1'}}},
+        {
+            category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp3', children: [
+            {category: 'widget', attr: {desc: '下拉框',  type: 'selector', pjfAttr:{name: 'group1', categoryId: '116426'}}},
+            {category: 'widget', attr: {desc: 'auto',  type: 'auto', pjfAttr:{name: 'group2', categoryId: '116341'}}}
+        ]
+        }
+    ]
+    }
+]}    
+</code></pre>
+
+<h3><span id="anchor21">form</span></h3>
+
+<p>form用于描述提交到后台的数据集合</p>
+
+<table>
+<thead>
+<tr>
+<th>属性名</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>category</td>
+<td>类别定义，此处为form</td>
+</tr>
+<tr>
+<td>el</td>
+<td>对应html中form的id属性</td>
+</tr>
+<tr>
+<td>children</td>
+<td>数组格式，描述form中所具有的数据项，只能包含container</td>
+</tr>
+</tbody>
+</table>
+
+
+<h3>container</h3>
+
+<p>container用于描述组件在界面上放置的位置和数据项所属的层级</p>
+
+<table>
+<thead>
+<tr>
+<th>属性名</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>category</td>
+<td>类别定义，此处为container</td>
+</tr>
+<tr>
+<td>el</td>
+<td>对应html中包含组件dom的容器的id属性(如列式布局则为ul的id)</td>
+</tr>
+<tr>
+<td>groupName</td>
+<td>组名（可选）,表示数据项所属的层级,不影响界面展示</td>
+</tr>
+<tr>
+<td>children</td>
+<td>数组格式，描述container中所具有的数据项，可以包含widget,data以及container</td>
+</tr>
+</tbody>
+</table>
+
+
+<h3>widget</h3>
+
+<p>widget用于描述需要在界面上展示的组件</p>
+
+<table>
+<thead>
+<tr>
+<th>属性名</th>
+<th>子属性</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>category</td>
+<td>-</td>
+<td>类别定义，此处为widget</td>
+</tr>
+<tr>
+<td>attr</td>
+<td>-</td>
+<td>初始化所需属性</td>
+</tr>
+<tr>
+<td>-</td>
+<td>type</td>
+<td>实例化组件类型，现支持<code>'textfield': PJF.ui.textfield,'dateinput': PJF.ui.dateinput,'selector': PJF.ui.select,'auto': PJF.ui.autoComplete</code></td>
+</tr>
+<tr>
+<td>-</td>
+<td>desc</td>
+<td>组件描述，代替之前代码中label组件</td>
+</tr>
+<tr>
+<td>-</td>
+<td>pjfAttr</td>
+<td>用于实例化pjf组件所需传入参数（dom属性无需传入）</td>
+</tr>
+<tr>
+<td>-</td>
+<td>initialize</td>
+<td>(可选)pjf组件实例化完成调用完成额外初始化工作</td>
+</tr>
+<tr>
+<td>-</td>
+<td>getValuePost</td>
+<td>(可选)取值后置操作</td>
+</tr>
+<tr>
+<td>-</td>
+<td>setValuePre</td>
+<td>(可选)设值前置操作</td>
+</tr>
+</tbody>
+</table>
+
+
+<h3>data</h3>
+
+<p>data用于描述不在界面上展示的数据项</p>
+
+<table>
+<thead>
+<tr>
+<th>属性名</th>
+<th>子属性</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>category</td>
+<td>-</td>
+<td>类别定义，此处为data</td>
+</tr>
+<tr>
+<td>attr</td>
+<td>-</td>
+<td>初始化所需属性</td>
+</tr>
+<tr>
+<td>-</td>
+<td>name</td>
+<td>数据项对应key值</td>
+</tr>
+<tr>
+<td>-</td>
+<td>defaultValue</td>
+<td>(可选)默认值</td>
+</tr>
+<tr>
+<td>-</td>
+<td>getValuePost</td>
+<td>(可选)取值后置操作</td>
+</tr>
+<tr>
+<td>-</td>
+<td>setValuePre</td>
+<td>(可选)设值前置操作</td>
+</tr>
+</tbody>
+</table>
+
+
+<h2><span id="anchor3">API参考</span></h2>
+
+<h3>pciMVC.Model.FormInstantiator</h3>
+
+<p>用于初始化form创建</p>
+
+<table>
+<thead>
+<tr>
+<th>方法名</th>
+<th>参数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>getForm</td>
+<td>-</td>
+<td>获取创建的form</td>
+</tr>
+<tr>
+<td>add</td>
+<td>data</td>
+<td>动态增加数据项，data为需要动态增加的数据项，格式与初始化时相同</td>
+</tr>
+</tbody>
+</table>
+
+
+<h3>pciMVC.Model.Form</h3>
+
+<p>数据集合封装对象</p>
+
+<table>
+<thead>
+<tr>
+<th>方法名</th>
+<th>参数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>getItems</td>
+<td>-</td>
+<td>获取所有Item对象</td>
+</tr>
+<tr>
+<td>getFormData</td>
+<td>-</td>
+<td>根据初始化结构返回所有数据项的值</td>
+</tr>
+<tr>
+<td>setFormData</td>
+<td>data</td>
+<td>根据与初始化结构相符的JSON对象对存储的Item对象进行赋值</td>
+</tr>
+<tr>
+<td>getItemByName</td>
+<td>key</td>
+<td>根据name属性查找对应的Item并返回，对于深层对象，各个层级用<code>.</code>分隔</td>
+</tr>
+<tr>
+<td>executeInGroup</td>
+<td>groupName, funcname</td>
+<td>对一个group内的数据项进行全量操作。<code>groupName</code>为需要操作的组名，<code>funcname</code>为要执行操作的方法名，方法所需的参数按次序加入实参中。</td>
+</tr>
+</tbody>
+</table>
+
+
+<h3>pciMVC.Model.Item</h3>
+
+<p>数据项封装，对widget和data提供统一的取值设值接口</p>
+
+<table>
+<thead>
+<tr>
+<th>方法名</th>
+<th>参数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>setValue</td>
+<td>data</td>
+<td>设值</td>
+</tr>
+<tr>
+<td>getValue</td>
+<td>-</td>
+<td>取值</td>
+</tr>
+<tr>
+<td>getType</td>
+<td>-</td>
+<td>返回封装的数据项类型<code>widget</code>或<code>data</code></td>
+</tr>
+<tr>
+<td>execute</td>
+<td>funcname</td>
+<td>widget类型特有方法，用于执行组件方法，<code>funcname</code>为要执行操作的方法名，方法所需的参数按次序加入实参中。</td>
+</tr>
+</tbody>
+</table>
+
+
+<h3>pciMVC.Util</h3>
+
+<p>工具方法模块，提供通用方法</p>
+
+<table>
+<thead>
+<tr>
+<th>方法名</th>
+<th>参数</th>
+<th>说明</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>createNamespace</td>
+<td>context,namespace</td>
+<td><code>context</code>为需要创建命名空间的根对象，<code>namespace</code>为命名空间层级描述。方法返回创建的命名空间</td>
+<td><code>var root = pciMVC.Util.createNamespace(window, 'pci.test.MVCTest');</code></td>
+</tr>
+</tbody>
+</table>
+
+</body>
+</html>

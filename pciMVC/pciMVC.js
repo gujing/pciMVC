@@ -303,6 +303,12 @@
                         postProcessor: function () {
                         },
                         initialize: function () {
+                        },
+                        setValuePre: function (data) {
+                            return data;
+                        },
+                        getValuePost: function (data) {
+                            return data;
                         }
                     };
                     if (attr['pjfAttr']) {
@@ -335,6 +341,8 @@
                                 attrs['widget'].setRequired(flag);
                             }
                         },
+                        getValuePost: attrs['getValuePost'],
+                        setValuePre: attrs['setValuePre'],
                         getValue: function () {
                             try {
                                 return attrs['widget'].getValue();
@@ -448,10 +456,9 @@
                         if (typeof container.getGroupName() === 'string') {
                             var itemsInGroup = {};
                             container.instantiate(function (parsedWidget) {
-                                parsedWidget.parseItemsWithKey().forEach(function(keyItem){
+                                parsedWidget.parseItemsWithKey().forEach(function (keyItem) {
                                     safeInsertData(itemsInGroup, keyItem['key'].split('.'), keyItem['value']);
                                 });
-//                                safeInsertData(itemsInGroup, parsedWidget.getKey().split('.'), pciMVC.Model.Item(parsedWidget));
                             });
                             container.getDatas().forEach(function (data) {
                                 safeInsertData(itemsInGroup, data.name.split('.'), pciMVC.Model.Item(data));
@@ -459,10 +466,9 @@
                             form.addItemByGroup(container.getGroupName(), itemsInGroup);
                         } else {
                             container.instantiate(function (parsedWidget) {
-                                parsedWidget.parseItemsWithKey().forEach(function(keyItem){
+                                parsedWidget.parseItemsWithKey().forEach(function (keyItem) {
                                     form.addItem(keyItem['key'], keyItem['value']); //将widget放在Item存入Form
                                 });
-//                                form.addItem(parsedWidget.getKey(), pciMVC.Model.Item(parsedWidget)); //将widget放在Item存入Form
                             });
                             container.getDatas().forEach(function (data) {
                                 form.addItem(data.name, pciMVC.Model.Item(data));
@@ -591,31 +597,38 @@
                                 getWidget: function () {
                                     return widget;
                                 },
-                                setValue: setValueFunc || (function (m_data) {
-                                    widget.setValue(m_data);
-                                }),
-                                getValue: getValueFunc || (function () {
-                                    widget.getValue();
-                                })
+                                execute: function () {
+                                    var args = Array.prototype.slice.call(arguments);
+                                    widget.execute.apply(widget, args);
+                                },
+                                setValue: function (m_data) {
+                                    var data = widget.setValuePre(m_data);
+                                    (setValueFunc || (function (data) {
+                                        widget.setValue(data);
+                                    }))(data);
+                                },
+                                getValue: function () {
+                                    var data = (getValueFunc || (function () {
+                                        return widget.getValue();
+                                    }))();
+                                    return widget.getValuePost(data);
+                                }
                             };
                         }(data))
                     } else {
                         return (function (data) {
                             var value = data.defaultValue;
-                            var getValueFunc = data.getValue;
+                            var getValuePost = data.getValuePost || function(data){return data};
+                            var setValuePre = data.setValuePre || function(data){return data};
                             return {
                                 getType: function () {
                                     return 'data';
                                 },
                                 setValue: function (m_data) {
-                                    value = m_data;
+                                    value = setValuePre(m_data);
                                 },
                                 getValue: function () {
-                                    if (getValueFunc instanceof Function) {
-                                        return getValueFunc(value);
-                                    } else {
-                                        return value;
-                                    }
+                                    return getValuePost(value);
                                 }
                             }
                         }(data))
