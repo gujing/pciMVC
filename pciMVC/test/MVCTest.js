@@ -1,3 +1,4 @@
+var root = pciMVC.Util.createNamespace(window, 'pci.test.MVCTest');
 PJF.html.bodyReady(function () {
     /*var view = {category: 'form', el: 'form_trans', children: [
      {
@@ -17,7 +18,7 @@ PJF.html.bodyReady(function () {
      ]};*/
 
 
-    var view = {category: 'form', el: 'form_trans', children: [
+    root.view = {category: 'form', el: 'form_trans', children: [
         {
             category: 'container', type: 'ul', el: 'ul_part1', children: [
             {category: 'widget', attr: {desc: '文本框1',  type: 'textfield', pjfAttr:{name: 'test'}}}
@@ -36,7 +37,8 @@ PJF.html.bodyReady(function () {
         }
     ]};
 
-    var form = pciMVC.Model.FormInstantiator(view).getForm();
+    var form = pciMVC.Model.FormInstantiator(root.view).getForm();
+    console.log(root);
     /*var txf = form.getForm().getItems()['grp']['input'][0];
      txf.execute('setRequired', false);
      txf.execute('disabled', false);*/
@@ -52,9 +54,14 @@ PJF.html.bodyReady(function () {
 //    form.executeInGroup('grp2', 'setRequired', false);
 
     var testData = {test: '123', test1: '1111', grp1: {group1: '2223', group2: '5632'}};
-    console.log(form.getFormData());
+    console.log(form.getItems());
     form.setFormData(testData);
     console.log(form.getFormData());
 
-    var a = {key: 'cust_id', type: 'string', length: '130', required: 'true'}
+    /*new PJF.ui.areaSelector({
+        dom:'ssx',
+        cityName:'city',
+        provinceName:'province',
+        countyName:'county'
+    });*/
 });

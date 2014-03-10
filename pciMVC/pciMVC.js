@@ -312,10 +312,12 @@
                         if (attr['getValue'] instanceof Function) {
                             var getValueFunc = attr['getValue'];
                         }
+                    } else {
+                        throw new Error('初始化PJF组件的属性需放置在pjfAttr节点下');
                     }
                     return {
                         extractHtmlContent: function () {
-                            if (attrs.required) {
+                            if (attrs['pjfAttr']['required']) {
                                 attrs.desc = '<a class="red" id = "star_' + attrs.id + '">*</a>' + attrs.desc;
                             }
                             return template.render(attrs.type, {'id': attrs.id, 'desc': attrs.desc});
@@ -334,20 +336,43 @@
                             }
                         },
                         getValue: function () {
-                            var value = attrs['widget'].getValue();
-                            if (getValueFunc) {
-                                return getValueFunc(value);
-                            } else {
-                                return value;
+                            try {
+                                return attrs['widget'].getValue();
+                            } catch (e) {
+                                throw new Error(attrs['type'] + attrs['id'] + ' has no method getValue');
                             }
+
                         },
                         setValue: function (data) {
-                            attrs['widget']['setValue'](data);
+                            try {
+                                attrs['widget']['setValue'](data);
+                            } catch (e) {
+                                throw new Error(attrs['type'] + attrs['id'] + ' has no method setValue');
+                            }
+                        },
+                        parseItemsWithKey: function () {
+                            var keyItems = [];
+                            switch (attrs['type']) {
+                                case 'areaSelector':
+                                    var provinceName = attrs['pjfAttr']['provinceName'];
+                                    var provinceSetFunc = function (data) {
+                                        this.getWidget().execute('setProvinceValue', data);
+                                    };
+                                    var provinceGetFunc = function () {
+
+                                    };
+                                    keyItems.push({key: provinceName, value: {'widget': this, 'setValue': provinceSetFunc()}});
+                                    break;
+                                default :
+                                    keyItems.push({key: attrs['pjfAttr']['name'], value: pciMVC.Model.Item({'widget': this})});
+                            }
+                            return keyItems;
+
                         },
                         getKey: function () {
                             return attrs['pjfAttr']['name'];
                         },
-                        getWidget: function () {
+                        getPJFWidget: function () {
                             return attrs['widget'];
                         },
                         getType: function () {
@@ -423,7 +448,10 @@
                         if (typeof container.getGroupName() === 'string') {
                             var itemsInGroup = {};
                             container.instantiate(function (parsedWidget) {
-                                safeInsertData(itemsInGroup, parsedWidget.getKey().split('.'), pciMVC.Model.Item(parsedWidget));
+                                parsedWidget.parseItemsWithKey().forEach(function(keyItem){
+                                    safeInsertData(itemsInGroup, keyItem['key'].split('.'), keyItem['value']);
+                                });
+//                                safeInsertData(itemsInGroup, parsedWidget.getKey().split('.'), pciMVC.Model.Item(parsedWidget));
                             });
                             container.getDatas().forEach(function (data) {
                                 safeInsertData(itemsInGroup, data.name.split('.'), pciMVC.Model.Item(data));
@@ -431,10 +459,13 @@
                             form.addItemByGroup(container.getGroupName(), itemsInGroup);
                         } else {
                             container.instantiate(function (parsedWidget) {
-                                form.addItem(parsedWidget.getKey(), parsedWidget); //将widget放在Item存入Form
+                                parsedWidget.parseItemsWithKey().forEach(function(keyItem){
+                                    form.addItem(keyItem['key'], keyItem['value']); //将widget放在Item存入Form
+                                });
+//                                form.addItem(parsedWidget.getKey(), pciMVC.Model.Item(parsedWidget)); //将widget放在Item存入Form
                             });
                             container.getDatas().forEach(function (data) {
-                                form.addItem(data.name, data);
+                                form.addItem(data.name, pciMVC.Model.Item(data));
                             });
                         }
                     };
@@ -509,7 +540,7 @@
                     return {
                         addItem: function (key, value) {
                             var keylist = key.split('.');
-                            safeInsertData(items, keylist, pciMVC.Model.Item(value));
+                            safeInsertData(items, keylist, value);
                         },
 
                         addItemByGroup: function (groupName, groupValue) {
@@ -519,6 +550,11 @@
 
                         getItems: function () {
                             return items;
+                        },
+
+                        getItemByName: function (groupName) {
+                            var keylist = groupName.split('.');
+                            return getDeepData(items, keylist);
                         },
 
                         getFormData: function () {
@@ -542,9 +578,26 @@
 
                 },
                 Item: function (data) {
-                    if (data.getType && data.getType() === 'widget') {
+                    if (data['widget']) {
                         return (function (data) {
-                            return data;
+                            var type = 'widget';
+                            var widget = data['widget'];
+                            var getValueFunc = data['getValue'];
+                            var setValueFunc = data['setValue'];
+                            return {
+                                getType: function () {
+                                    return type;
+                                },
+                                getWidget: function () {
+                                    return widget;
+                                },
+                                setValue: setValueFunc || (function (m_data) {
+                                    widget.setValue(m_data);
+                                }),
+                                getValue: getValueFunc || (function () {
+                                    widget.getValue();
+                                })
+                            };
                         }(data))
                     } else {
                         return (function (data) {
@@ -568,6 +621,21 @@
                         }(data))
                     }
 
+                }
+            },
+            Util: {
+                createNamespace: function (context, namespace) {
+                    var keylist = namespace.split('.');
+                    (function createStructure(data, keylist) {
+                        if (keylist.length > 0) {
+                            var key = keylist.shift();
+                            data[key] || (data[key] = {});
+                            createStructure(data[key], keylist);
+                        } else {
+                            data;
+                        }
+                    }(context, keylist));
+                    return getDeepData(context, namespace.split('.'));
                 }
             }
         }
