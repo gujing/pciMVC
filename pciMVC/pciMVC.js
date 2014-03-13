@@ -22,26 +22,30 @@
             },
             'selector': function () {
                 var that = this;
-                new PJF.communication.getStandardCode({
-                    categoryId: that['pjfAttr'].categoryId,
-                    appId: that['pjfAttr'].appId,
-                    clcd: that['pjfAttr'].clcd,
-                    success: function (data) {
-                        that['widget'].addOptions(reformatStandCode(data, 'selector'));
-                    }
-                })
+                if (that['pjfAttr'].categoryId) {
+                    new PJF.communication.getStandardCode({
+                        categoryId: that['pjfAttr'].categoryId,
+                        appId: that['pjfAttr'].appId,
+                        clcd: that['pjfAttr'].clcd,
+                        success: function (data) {
+                            that['widget'].addOptions(reformatStandCode(data, 'selector'));
+                        }
+                    })
+                }
 
             },
             'auto': function () {
                 var that = this;
-                new PJF.communication.getStandardCode({
-                    categoryId: that['pjfAttr'].categoryId,
-                    appId: that['pjfAttr'].appId,
-                    clcd: that['pjfAttr'].clcd,
-                    success: function (data) {
-                        that['widget'].addOptions(reformatStandCode(data, 'auto'));
-                    }
-                })
+                if (that['pjfAttr'].categoryId) {
+                    new PJF.communication.getStandardCode({
+                        categoryId: that['pjfAttr'].categoryId,
+                        appId: that['pjfAttr'].appId,
+                        clcd: that['pjfAttr'].clcd,
+                        success: function (data) {
+                            that['widget'].addOptions(reformatStandCode(data, 'auto'));
+                        }
+                    })
+                }
             }
         };
 
@@ -150,6 +154,9 @@
         };
 
         var judgeObjectSturctureEqual = function (obj, compareObj) {
+            if (obj['getType'] && compareObj['getType']) {
+                return true;
+            }
             var objLength = objectPropertyLength(obj), compareObjLength = objectPropertyLength(compareObj);
             if (objLength != compareObjLength) {
                 return false;
@@ -159,8 +166,6 @@
                         if (!judgeArrayStructureEqual(obj[el], compareObj[el])) {
                             return false;
                         }
-                    } else if (obj[el]['getType'] && compareObj[el]['getType']) {
-                        //item 对象
                     } else if (isPureObject(obj[el]) && isPureObject(compareObj[el])) {
                         if (!judgeObjectSturctureEqual(obj[el], compareObj[el])) {
                             return false;
@@ -231,7 +236,7 @@
         };
 
         var isPureObject = function (object) {
-            return object instanceof Object && !(object instanceof Array);
+            return object instanceof Object && !(object instanceof Array) && !(object instanceof Function);
         };
 
         return {
@@ -367,9 +372,25 @@
                                         this.getWidget().execute('setProvinceValue', data);
                                     };
                                     var provinceGetFunc = function () {
-
+                                        return this.getWidget().execute('getProvinceValue');
                                     };
-                                    keyItems.push({key: provinceName, value: {'widget': this, 'setValue': provinceSetFunc()}});
+                                    keyItems.push({key: provinceName, value: {'widget': this, 'setValue': provinceSetFunc(), 'getValue': provinceGetFunc()}});
+                                    var cityName = attrs['pjfAttr']['cityName'];
+                                    var citySetFunc = function (data) {
+                                        this.getWidget().execute('setCityValue', data);
+                                    };
+                                    var cityGetFunc = function () {
+                                        return this.getWidget().execute('getCityValue');
+                                    };
+                                    keyItems.push({key: cityName, value: {'widget': this, 'setValue': citySetFunc(), 'getValue': cityGetFunc()}});
+                                    var countyName = attrs['pjfAttr']['countyName'];
+                                    var countySetFunc = function (data) {
+                                        this.getWidget().execute('setCountyValue', data);
+                                    };
+                                    var countyGetFunc = function () {
+                                        return this.getWidget().execute('getCountyValue');
+                                    };
+                                    keyItems.push({key: countyName, value: {'widget': this, 'setValue': countySetFunc(), 'getValue': countyGetFunc()}});
                                     break;
                                 default :
                                     keyItems.push({key: attrs['pjfAttr']['name'], value: pciMVC.Model.Item({'widget': this})});
@@ -534,7 +555,12 @@
                             } else if (object[key] instanceof Array && items[key] instanceof Array) {
                                 for (var i = 0; i < object[key].length; i++) {
                                     var obj = object[key][i];
-                                    setItemValue(items[key][i], object[key][i]);
+                                    if (obj instanceof Object) {
+                                        setItemValue(items[key][i], obj);
+                                    } else {
+                                        safeSetValue(items[key][i], obj);
+                                    }
+
                                 }
                             } else {
                                 safeSetValue(items[key], object[key]);
@@ -618,8 +644,12 @@
                     } else {
                         return (function (data) {
                             var value = data.defaultValue;
-                            var getValuePost = data.getValuePost || function(data){return data};
-                            var setValuePre = data.setValuePre || function(data){return data};
+                            var getValuePost = data.getValuePost || function (data) {
+                                return data
+                            };
+                            var setValuePre = data.setValuePre || function (data) {
+                                return data
+                            };
                             return {
                                 getType: function () {
                                     return 'data';
@@ -644,11 +674,110 @@
                             var key = keylist.shift();
                             data[key] || (data[key] = {});
                             createStructure(data[key], keylist);
-                        } else {
-                            data;
                         }
                     }(context, keylist));
                     return getDeepData(context, namespace.split('.'));
+                },
+                UnitTest: function (config) {
+                    //保存错误信息
+                    var errorMsg = new Array();
+
+                    //检测交易码是否填写
+                    if (config.fwTranId == "" || config.fwTranId == null || config.fwTranId == undefined) {
+                        alert("交易码未填写");
+                        return false;
+                    }
+
+                    //前端请求数据
+                    var reqData = config.jsonData;
+
+                    //测试接口数据
+                    var testData = [
+                        {name: "test", type: 'String', maxLength: 10, required: true},
+                        {name: 'test1', type: 'String', maxLength: 10, required: true},
+                        {type: 'Array', name: 'grp1', children: [
+                            {name: 'group5', type: 'String', maxLength: 20, required: true},
+                            {name: 'group4', type: 'String', maxLength: 20, required: true}
+                        ]}
+                    ];
+
+                    var interData = testData;
+
+                    //比较数据结构
+                    var compareStr = function (interData) {
+                        for (var i in interData) {
+                            vaildField(interData[i], reqData);
+                        }
+                    };
+
+                    var vaildField = function (inter, req) {
+                        var _name = inter.name;
+                        var _type = inter.type;
+
+                        try {
+                            var _temp = req[_name];
+                        }
+                        catch (e) {
+
+                        }
+                        if (undefined == _temp) {
+                            errorMsg.push("字段不符，请求数据中缺少【" + _name + "】字段,或上送值为undefined");
+                        }
+                        else {
+                            if (typeof _temp == "string") {
+
+                                if (!_temp instanceof String) {
+                                    errorMsg.push("【" + _name + "】字段类型类型不匹配，接口类型为:" + inter.type);
+                                }
+
+                                if (inter.required == true || inter.required == 'true') {
+                                    if (_temp == "") {
+                                        errorMsg.push("【" + _name + "】字段为必填项，值不能为空");
+                                    }
+                                }
+
+                                if (_temp.length > inter.maxLength) {
+                                    errorMsg.push("【" + _name + "】字段长度超长，接口允许最大长度为：" + inter.maxLength);
+                                }
+                            }
+                            else if (_type == "Object") {
+                                if (!_temp instanceof Object) {
+                                    errorMsg.push("【" + _name + "】字段类型类型不匹配，接口类型为:" + inter.type);
+                                }
+
+                                if (typeof _temp == "object") {
+                                    for (var y in inter.children) {
+                                        vaildField(inter.children[y], _temp);
+                                    }
+                                }
+                            }
+                            else if (_type == 'Array') {
+                                if (!_temp instanceof Array) {
+                                    errorMsg.push("【" + _name + "】字段类型类型不匹配，接口类型为:" + inter.type);
+                                }
+
+                                for (var i = 0; i < _temp.length; i++) {
+                                    for (var t in inter.children) {
+                                        vaildField(inter.children[t], _temp[i]);
+                                    }
+                                }
+                            }
+                        }
+                    };
+
+                    compareStr(interData);
+                    if (errorMsg.length > 0) {
+                        var _div = document.createElement("div");
+                        _div.setAttribute("style", "width:70%;height:auto;border:1px solid red;margin-left:auto;margin-right:auto;border-radius:4px 4px 4px 4px;box-shadow:0 1px 1px #34a5cf inset;border:1px solid rgba(0, 0, 0, 0.05);");
+                        document.body.appendChild(_div);
+                        _div.innerHTML = "<span style='font-size:18px;color:red;padding:10px;'>挡板测试错误提示</span></br>";
+                        for (var k in errorMsg) {
+                            _div.innerHTML += "<span style='color:red;margin-left:100px;'>*&nbsp;</span>" + errorMsg[k];
+                            _div.innerHTML += "</br>";
+                        }
+                    } else {
+                        config.callback("回调函数数据");
+                    }
                 }
             }
         }
