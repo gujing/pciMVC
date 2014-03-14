@@ -477,6 +477,7 @@
                         if (typeof container.getGroupName() === 'string') {
                             var itemsInGroup = {};
                             container.instantiate(function (parsedWidget) {
+                                //todo forEach not useful in IE 8-
                                 parsedWidget.parseItemsWithKey().forEach(function (keyItem) {
                                     safeInsertData(itemsInGroup, keyItem['key'].split('.'), keyItem['value']);
                                 });
