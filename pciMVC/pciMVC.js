@@ -5,8 +5,18 @@
  * Time: 下午10:22
  */
 (function (root, factory) {
+    if (!('forEach' in Array.prototype)) {
+        Array.prototype.forEach = function (action, that /*opt*/) {
+            for (var i = 0, n = this.length; i < n; i++)
+                if (i in this)
+                    action.call(that, this[i], i, this);
+        };
+    }
+    // add forEach method for the browser not support that
     root.pciMVC = factory();
 }(this, function () {
+
+        var widgetStorage = {};
 
         var widgetEnum = {
             'textfield': PJF.ui.textfield,
@@ -243,12 +253,27 @@
             View: {
                 UlContent: function (attr) {
                     var el = attr['el'];
-                    var groupName = attr['groupName'];
+                    if (attr['groupName']) {
+                        var groupName = attr['groupName'];
+                        if (attr['groupType']) {
+                            var groupType = attr['groupType'];
+                        } else {
+                            throw new Error(' 具有groupName属性时groupType属性必填');
+                        }
+                    }
+
                     var widget_list = [];
                     var id = id_generate();
                     var data_list = [];
+                    var subContainer = [];
 
                     return {
+                        addContainer: function (container) {
+                            subContainer.push(container);
+                        },
+                        getContainers: function () {
+                            return subContainer;
+                        },
                         addData: function (data) {
                             data_list.push(data);
                             return data;
@@ -429,11 +454,15 @@
 
                     var parseContainer = function (data, upperGroupName) {
                         if (upperGroupName) {
-                            data['groupName'] = upperGroupName + '.' + data['groupName'];
+                            if (data['groupName']) {
+                                data['groupName'] = upperGroupName + '.' + data['groupName'];
+                            } else {
+                                throw new Error('有groupName属性的container的下级container也必须具有groupName属性');
+                            }
                         }
                         if (data['type'] === 'ul') {
                             var ul_content = pciMVC.View.UlContent(data);
-                            containers[ul_content.getId()] = ul_content;
+//                            containers[ul_content.getId()] = ul_content;
                             for (var i = 0; i < data['children'].length; i++) {
                                 var child = data['children'][i];
                                 if (child['category'] === 'widget') {
@@ -443,11 +472,11 @@
                                     ul_content.addData(child['attr']); //纯值对象的attr放入容器中
                                 }
                                 if (child['category'] === 'container') {
-                                    if (typeof ul_content.getGroupName() === 'string') {
-                                        parseContainer(child, ul_content.getGroupName());
-                                    } else {
-                                        throw '上级container的groupName属性不能为空';
-                                    }
+//                                    if (typeof ul_content.getGroupName() === 'string') {
+                                        ul_content.addContainer(parseContainer(child, ul_content.getGroupName()));
+//                                    } else {
+//                                        throw '上级container的groupName属性不能为空';
+//                                    }
 
                                 }
 
@@ -458,7 +487,12 @@
                     };
 
                     var parseWidget = function (data) {
-                        return pciMVC.View.Widget(data['attr']);
+                        var widget = pciMVC.View.Widget(data['attr']);
+                        var id = data['attr']['id'];
+                        if (id) {
+                            widgetStorage[id] = widget;
+                        }
+                        return widget;
                     };
 
                     var parseMetaData = function (data) {
@@ -477,7 +511,6 @@
                         if (typeof container.getGroupName() === 'string') {
                             var itemsInGroup = {};
                             container.instantiate(function (parsedWidget) {
-                                //todo forEach not useful in IE 8-
                                 parsedWidget.parseItemsWithKey().forEach(function (keyItem) {
                                     safeInsertData(itemsInGroup, keyItem['key'].split('.'), keyItem['value']);
                                 });
@@ -678,6 +711,9 @@
                         }
                     }(context, keylist));
                     return getDeepData(context, namespace.split('.'));
+                },
+                getWidgetById: function (id) {
+                    return widgetStorage[id];
                 },
                 UnitTest: function (config) {
                     //保存错误信息
