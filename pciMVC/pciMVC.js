@@ -210,23 +210,23 @@
             }
         };
 
-        var safeInsertData = function (root, keylist, value) {
+        var safeInsertData = function (root, keylist, value, type) {
             initialDataStructure(root, keylist);
             var targetDataItem = getDeepData(root, keylist);
             if (targetDataItem === undefined) {
-                setDeepData(root, keylist, value);
-            } else if (isPureObject(targetDataItem)) {
-                if (judgeObjectSturctureEqual(targetDataItem, value)) {
-                    var tempArray = [];
-                    tempArray.push(targetDataItem);
-                    tempArray.push(value);
-                    setDeepData(root, keylist, tempArray);
-                } else {
-                    mergeObject(targetDataItem, value);
+                if (type === 'Array') {
+                    var temArray = [];
+                    temArray.push(value);
+                    value = temArray;
                 }
+                setDeepData(root, keylist, value);
+            } else if (isPureObject(targetDataItem) && type === 'Group') {
+                mergeObject(targetDataItem, value);
 
-            } else if (targetDataItem instanceof Array) {
+            } else if (targetDataItem instanceof Array && type === 'Array') {
                 targetDataItem.push(value);
+            } else {
+                throw new Error(keylist.join('.') + '声明的类型与实际不符');
             }
         };
 
@@ -282,7 +282,9 @@
                         getDatas: function () {
                             return data_list;
                         },
-
+                        getGroupType: function () {
+                            return groupType;
+                        },
                         addWidget: function (widget) {
                             widget_list.push(widget);
                             return widget;
@@ -295,6 +297,9 @@
                                 widgetContent += '<li>' + widget.extractHtmlContent() + '</li>';
                             }
                             PJF.html.append(el, widgetContent);
+                            subContainer.forEach(function(container){
+                                container.insertHtmlDom();
+                            });
                         },
 
                         instantiate: function (fn) {
@@ -306,12 +311,14 @@
                                 }
                             }
                         },
+/*
 
                         dynamicAddWidget: function (widget) {
                             widget_list.push(widget);
                             PJF.html.append(el, '<li>' + widget.extractHtmlContent() + '</li>');
                             widget.instantiate();
                         },
+*/
 
                         getGroupName: function () {
                             return groupName;
@@ -352,6 +359,9 @@
                         throw new Error('初始化PJF组件的属性需放置在pjfAttr节点下');
                     }
                     return {
+                        getWidgetId:function(){
+                            return attrs['id'];
+                        },
                         extractHtmlContent: function () {
                             if (attrs['pjfAttr']['required']) {
                                 attrs.desc = '<a class="red" id = "star_' + attrs.id + '">*</a>' + attrs.desc;
@@ -359,7 +369,7 @@
                             return template.render(attrs.type, {'id': attrs.id, 'desc': attrs.desc});
                         },
                         instantiate: function () {
-                            console.log(attrs);
+                            console.log(attrs['id']);
                             attrs['label'] = new PJF.ui.label({dom: 'label_' + attrs.id});
                             attrs['widget'] = new widgetEnum[attrs.type](attrs['pjfAttr']);
                             attrs.postProcessor();
@@ -450,12 +460,12 @@
             Model: {
                 FormInstantiator: function (data) {
                     var form = pciMVC.Model.Form();
-                    var containers = {};
+                    var containers = [];
 
                     var parseContainer = function (data, upperGroupName) {
                         if (upperGroupName) {
                             if (data['groupName']) {
-                                data['groupName'] = upperGroupName + '.' + data['groupName'];
+//                                data['groupName'] = upperGroupName + '.' + data['groupName'];
                             } else {
                                 throw new Error('有groupName属性的container的下级container也必须具有groupName属性');
                             }
@@ -463,6 +473,7 @@
                         if (data['type'] === 'ul') {
                             var ul_content = pciMVC.View.UlContent(data);
 //                            containers[ul_content.getId()] = ul_content;
+
                             for (var i = 0; i < data['children'].length; i++) {
                                 var child = data['children'][i];
                                 if (child['category'] === 'widget') {
@@ -473,7 +484,7 @@
                                 }
                                 if (child['category'] === 'container') {
 //                                    if (typeof ul_content.getGroupName() === 'string') {
-                                        ul_content.addContainer(parseContainer(child, ul_content.getGroupName()));
+                                    ul_content.addContainer(parseContainer(child, ul_content.getGroupName()));
 //                                    } else {
 //                                        throw '上级container的groupName属性不能为空';
 //                                    }
@@ -500,7 +511,7 @@
 
                             for (var i = 0; i < data['children'].length; i++) {
                                 var metaData = data['children'][i];
-                                parseContainer(metaData);
+                                containers.push(parseContainer(metaData));
                             }
                         }
                     };
@@ -508,8 +519,8 @@
                     parseMetaData(data);
 
                     var instantiateContainer = function (container) {
+                        var itemsInGroup = {};
                         if (typeof container.getGroupName() === 'string') {
-                            var itemsInGroup = {};
                             container.instantiate(function (parsedWidget) {
                                 parsedWidget.parseItemsWithKey().forEach(function (keyItem) {
                                     safeInsertData(itemsInGroup, keyItem['key'].split('.'), keyItem['value']);
@@ -518,7 +529,12 @@
                             container.getDatas().forEach(function (data) {
                                 safeInsertData(itemsInGroup, data.name.split('.'), pciMVC.Model.Item(data));
                             });
-                            form.addItemByGroup(container.getGroupName(), itemsInGroup);
+                            container.getContainers().forEach(function (data) {
+                                var subContainerData = instantiateContainer(data);
+                                safeInsertData(itemsInGroup, data.getGroupName().split('.'), subContainerData, data.getGroupType());
+                            });
+//                            form.addItemByGroup(container.getGroupName(), itemsInGroup);
+                            return itemsInGroup;
                         } else {
                             container.instantiate(function (parsedWidget) {
                                 parsedWidget.parseItemsWithKey().forEach(function (keyItem) {
@@ -528,13 +544,22 @@
                             container.getDatas().forEach(function (data) {
                                 form.addItem(data.name, pciMVC.Model.Item(data));
                             });
+                            container.getContainers().forEach(function (data) {
+                                var subContainerData = instantiateContainer(data);
+                                safeInsertData(itemsInGroup, data.getGroupName().split('.'), subContainerData, data.getGroupType());
+                            });
+                            return itemsInGroup;
                         }
                     };
 
-                    for (var container_id in containers) {
-                        var container = containers[container_id];
+                    for (var i = 0; i < containers.length; i++) {
+                        var container = containers[i];
                         container.insertHtmlDom();
-                        instantiateContainer(container);
+                        if (container.getGroupName()) {
+                            form.addItemByGroup(container.getGroupName(), instantiateContainer(container));
+                        } else {
+                            form.mergerForm(instantiateContainer(container));
+                        }
                     }
 
                     return {
@@ -616,6 +641,10 @@
 
                         getItems: function () {
                             return items;
+                        },
+
+                        mergerForm: function (mergeInItems) {
+                            mergeObject(items, mergeInItems);
                         },
 
                         getItemByName: function (groupName) {
@@ -732,6 +761,10 @@
                     var testData = [
                         {name: "test", type: 'String', maxLength: 10, required: true},
                         {name: 'test1', type: 'String', maxLength: 10, required: true},
+                        {type: 'Object', name: 'grp2', children: [
+                             {name: 'group1', type: 'String', maxLength: 20, required: true},
+                             {name: 'group2', type: 'String', maxLength: 20, required: true}
+                         ]},
                         {type: 'Array', name: 'grp1', children: [
                             {name: 'group5', type: 'String', maxLength: 20, required: true},
                             {name: 'group4', type: 'String', maxLength: 20, required: true}
@@ -758,7 +791,7 @@
 
                         }
                         if (undefined == _temp) {
-                            errorMsg.push("字段不符，请求数据中缺少【" + _name + "】字段,或上送值为undefined");
+                            errorMsg.push("字段不符，请求数据中缺少【" + _name + "】字段，或上送值为undefined");
                         }
                         else {
                             if (typeof _temp == "string") {
@@ -805,12 +838,11 @@
                     compareStr(interData);
                     if (errorMsg.length > 0) {
                         var _div = document.createElement("div");
-                        _div.setAttribute("style", "width:70%;height:auto;border:1px solid red;margin-left:auto;margin-right:auto;border-radius:4px 4px 4px 4px;box-shadow:0 1px 1px #34a5cf inset;border:1px solid rgba(0, 0, 0, 0.05);");
+                        _div.setAttribute("style", "width:100%;height:auto;");
                         document.body.appendChild(_div);
-                        _div.innerHTML = "<span style='font-size:18px;color:red;padding:10px;'>挡板测试错误提示</span></br>";
+                        _div.innerHTML = "<span style='font-size:13px;line-height:30px;display:block;color:#FFFFFF;background:rgb(43, 129, 175);';><span style='padding-left:30px;'>挡板测试错误提示</span></span>";
                         for (var k in errorMsg) {
-                            _div.innerHTML += "<span style='color:red;margin-left:100px;'>*&nbsp;</span>" + errorMsg[k];
-                            _div.innerHTML += "</br>";
+                            _div.innerHTML += "<div style='background:rgb(210, 224, 230);line-height:25px;color:#2b81af'><span style='color:red;margin-left:30px;'>*&nbsp;</span>" + errorMsg[k]+"</div>";
                         }
                     } else {
                         config.callback("回调函数数据");

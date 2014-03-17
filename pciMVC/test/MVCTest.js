@@ -21,12 +21,12 @@ PJF.html.bodyReady(function () {
     root.view = {category: 'form', el: 'form_trans', children: [
         {
             category: 'container', type: 'ul', el: 'ul_part1', children: [
-            {category: 'widget', attr: {desc: '文本框1', type: 'textfield', getValuePost: function (data) {
+            {category: 'widget', attr: {id:'t_id',desc: '文本框1', type: 'textfield', getValuePost: function (data) {
                 return data + 'post'
             }, pjfAttr: {name: 'test'}}},
             {category: 'widget', attr: {desc: '文本框2', type: 'textfield', getValuePost: function (data) {
                 return data + 'post'
-            }, pjfAttr: {name: 'test'}}},
+            }, pjfAttr: {name: 'test1'}}},
             {category: 'widget', attr: {desc: '结束日期', type: 'dateinput', pjfAttr: {name: 'endTime'}}}
         ]
         },
@@ -35,6 +35,8 @@ PJF.html.bodyReady(function () {
             {category: 'widget', attr: {desc: '文本框2', type: 'dateinput', pjfAttr: {name: 'group1'}}},
             {
                 category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp3', groupType: 'Array', children: [
+                {category: 'widget', attr: {desc: '结束日期', type: 'dateinput', pjfAttr: {name: 'endTime'}}},
+                {category: 'widget', attr: {desc: '结束日期', type: 'dateinput', pjfAttr: {name: 'endTime2'}}}
 //                {category: 'widget', attr: {desc: '下拉框',  type: 'selector', pjfAttr:{name: 'group1', categoryId: '116426'}}},
 //                {category: 'widget', attr: {desc: 'auto',  type: 'auto', pjfAttr:{name: 'group2', categoryId: '116341'}}}
             ]
@@ -65,6 +67,7 @@ PJF.html.bodyReady(function () {
     console.log(form.getItems());
     form.setFormData(testData);
     console.log(form.getFormData());
+    console.log(pciMVC.Util.getWidgetById('t_id').getValue());
 
     /*new PJF.ui.areaSelector({
      dom:'ssx',
@@ -73,23 +76,21 @@ PJF.html.bodyReady(function () {
      countyName:'county'
      });*/
 
-    /**
-     * 挡板测试
-     *
-     var xml = "<root>"+
-     "<node name='test'>Test Value</node>"+
-     "<node name='test2'><![CDATA[Test Value 2]]></node>"+
-     "<group name='test3'>"+
-     "<item name='Item 1' value='1'/>"+
-     "<item name='Item 2' value='2'/>"+
-     "<item name='Item 3' value='3'/>"+
-     "</group>"+
-     "</root>";*/
-
-    $.get("../data/simple.xml", function (xml) {
-        var x = $.xml2json(xml);
-        console.log(x);
-        alert(PJF.util.json2str(x))
+    $.get("../data/simple.xml",function(xml){
+        var jsonObj = $.xml2json(xml);
+        if(jsonObj)
+        {
+            var newJson = new Array();
+            jsonObj = jsonObj.node;
+            for ( var i = 0; i < jsonObj.length; i++) {
+                if(jsonObj[i].children){
+        	       jsonObj[i].children = jsonObj[i].children.node;
+                }
+                newJson.push(jsonObj[i]);
+            }
+            console.log(PJF.util.json2str(newJson));
+        }
+        
     });
 
     pciMVC.Util.UnitTest({
