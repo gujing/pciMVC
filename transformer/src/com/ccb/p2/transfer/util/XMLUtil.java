@@ -5,6 +5,7 @@ import com.ccb.p2.transfer.bean.TypeStatus;
 import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
+import org.dom4j.io.OutputFormat;
 import org.dom4j.io.XMLWriter;
 
 import java.io.FileWriter;
@@ -80,19 +81,19 @@ public class XMLUtil {
         }
     }*/
 
-    private void addElementByBean(Element context, ItemBean itemBean){
+    private void addElementByBean(Element context, ItemBean itemBean) {
         if (itemBean.getType() == TypeStatus.ITEM) {
             Element node = context.addElement("node");
             node.addElement("name").setText(itemBean.getName());
             node.addElement("type").setText("String");
             node.addElement("maxLength").setText(itemBean.getMaxLength());
             node.addElement("required").setText(itemBean.getRequired());
-        }else if(itemBean.getType() == TypeStatus.GROUP || itemBean.getType() == TypeStatus.ARRAY){
+        } else if (itemBean.getType() == TypeStatus.GROUP || itemBean.getType() == TypeStatus.ARRAY) {
             Element node = context.addElement("node");
             node.addElement("name").setText(itemBean.getName());
             node.addElement("type").setText("String");
             Element children = node.addElement("children");
-            for(ItemBean bean: itemBean.getChildren()){
+            for (ItemBean bean : itemBean.getChildren()) {
                 addElementByBean(children, bean);
             }
         }
@@ -108,10 +109,11 @@ public class XMLUtil {
         return document;
     }
 
-    public void writeXML(Document document){
+    public void writeXML(Document document) {
         try {
+            OutputFormat format = OutputFormat.createPrettyPrint();
             Writer fileWriter = new FileWriter("output/res.xml");
-            XMLWriter xmlWriter = new XMLWriter(fileWriter);
+            XMLWriter xmlWriter = new XMLWriter(fileWriter, format);
             xmlWriter.write(document);
             xmlWriter.flush();
             xmlWriter.close();
