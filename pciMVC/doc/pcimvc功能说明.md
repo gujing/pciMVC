@@ -10,6 +10,7 @@
 2014/3/6|0.0.1a|发布pciMVC|古晶
 2014/3/10|0.0.2a| 修改widget与item关联关系以适配一个组件对应多个数据项的场景。新增Util模块提供工具类方法，调整widget，data部分属性|古晶
 2014/3/17|0.0.3a|修复IE9以下版本不支持数组forEach方法的问题。调整container所具有的属性,增加groupType属性。 widget增加id属性，可以通过id获取widget对象|古晶
+2014/3/17|0.0.3a|form新增executeByNameList方法。item增加对初始值的存储|古晶
 
 ##[设计思路](id:anchor1)
 通过对数据项的描述代替之前创建组件所需的html代码和JS代码。建立组件与数据项的关联关系，并提供对于数据通用性操作的统一处理。
@@ -101,6 +102,7 @@ getFormData|-|根据初始化结构返回所有数据项的值
 setFormData|data|根据与初始化结构相符的JSON对象对存储的Item对象进行赋值
 getItemByName|key|根据name属性查找对应的Item并返回，对于深层对象，各个层级用`.`分隔
 executeInGroup|groupName, funcname|对一个group内的数据项进行全量操作。`groupName`为需要操作的组名，`funcname`为要执行操作的方法名，方法所需的参数按次序加入实参中。
+executeByNameList|names, funcname|根据name对数据项进行操作。`names`为需要操作的数据项的name数组，`funcname`为要执行操作的方法名，方法所需的参数按次序加入实参中。
 
 ### pciMVC.Model.Item
 数据项封装，对widget和data提供统一的取值设值接口

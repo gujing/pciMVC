@@ -1,27 +1,10 @@
 var root = pciMVC.Util.createNamespace(window, 'pci.test.MVCTest');
 PJF.html.bodyReady(function () {
-    /*var view = {category: 'form', el: 'form_trans', children: [
-     {
-     category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp', children: [
-     {category: 'widget', attr: {desc: '文本框1', required: true, type: 'textfield', name: 'input'}},
-     {category: 'widget', attr: {desc: '文本框11', required: true, type: 'textfield', name: 'input'}}
-     ]
-     },
-     {
-     category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp1', children: [
-     {category: 'widget', attr: {desc: '文本框2', required: true, type: 'textfield', name: 'input'}},
-     {category: 'widget', attr: {desc: '文本框2', required: true, type: 'textfield', name: 'input'}},
-     {category: 'widget', attr: {desc: '文本框3', required: true, type: 'textfield', name: 'input2'}},
-     {category: 'data', attr: {name: 'tms', defaultValue: '2121212'}}
-     ]
-     }
-     ]};*/
-
 
     root.view = {category: 'form', el: 'form_trans', children: [
         {
             category: 'container', type: 'ul', el: 'ul_part1', children: [
-            {category: 'widget', attr: {id:'t_id',desc: '文本框1', type: 'textfield', getValuePost: function (data) {
+            {category: 'widget', attr: {id: 't_id', desc: '文本框1', type: 'textfield', getValuePost: function (data) {
                 return data + 'post'
             }, pjfAttr: {name: 'test'}}},
             {category: 'widget', attr: {desc: '文本框2', type: 'textfield', getValuePost: function (data) {
@@ -46,51 +29,36 @@ PJF.html.bodyReady(function () {
     ]};
 
     var form = pciMVC.Model.FormInstantiator(root.view).getForm();
+    root.handler = form;
     console.log(root);
-    /*var txf = form.getForm().getItems()['grp']['input'][0];
-     txf.execute('setRequired', false);
-     txf.execute('disabled', false);*/
 
-    /*form.add({var x = $.xml2json(xml);
-     category: 'container', type: 'ul', el: 'ul_part1', groupName: 'grp2', children: [
-     {category: 'widget', attr: {desc: '文本框21', required: true, type: 'textfield', name: 'input'}},
-     {category: 'widget', attr: {desc: '文本框21', required: true, type: 'textfield', name: 'input'}},
-     {category: 'widget', attr: {desc: '文本框31', required: true, type: 'textfield', name: 'input2'}}
-     ]
-     });*/
 
-//    form.executeInGroup('grp2', 'setRequired', false);
+    form.executeInGroup('grp1', 'setRequired', true);
+    form.executeByNameList(['test', 'test1'], 'setDisplay', false);
 
-    var testData = {test: ['123', '1111'], endTime: '20121212', grp1: [
+    var testData = {test: '1111', endTime: '20121212', grp1: [
         {group1: '2223', group2: '5632'}
     ]};
-    console.log(form.getItems());
     form.setFormData(testData);
     console.log(form.getFormData());
+    //使用
     console.log(pciMVC.Util.getWidgetById('t_id').getValue());
 
-    /*new PJF.ui.areaSelector({
-     dom:'ssx',
-     cityName:'city',
-     provinceName:'province',
-     countyName:'county'
-     });*/
 
-    $.get("../data/simple.xml",function(xml){
+    $.get("../data/simple.xml", function (xml) {
         var jsonObj = $.xml2json(xml);
-        if(jsonObj)
-        {
+        if (jsonObj) {
             var newJson = new Array();
             jsonObj = jsonObj.node;
-            for ( var i = 0; i < jsonObj.length; i++) {
-                if(jsonObj[i].children){
-        	       jsonObj[i].children = jsonObj[i].children.node;
+            for (var i = 0; i < jsonObj.length; i++) {
+                if (jsonObj[i].children) {
+                    jsonObj[i].children = jsonObj[i].children.node;
                 }
                 newJson.push(jsonObj[i]);
             }
             console.log(PJF.util.json2str(newJson));
         }
-        
+
     });
 
     pciMVC.Util.UnitTest({

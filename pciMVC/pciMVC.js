@@ -61,14 +61,19 @@
 
         var template = (function () {
             var templateMap = {};
+
             var textFieldTemplate = '<label id="label_{{:id}}">{{:desc}}</label><input id="dom_{{:id}}" type="text"/>';
             var dateInputTemplate = '<label id="label_{{:id}}">{{:desc}}</label><input id="dom_{{:id}}" type="text"/>';
             var selectorTemplate = '<label id="label_{{:id}}">{{:desc}}</label><span id="dom_{{:id}}" />';
             var autoTemplate = '<label id="label_{{:id}}">{{:desc}}</label><input id="dom_{{:id}}" type="text"/>';
+
+            var liTemplate = '<li id="{{:id}}_container" class="{{:class}}" style="{{:style}}">{{:content}}</li>';
+
             templateMap['textfield'] = textFieldTemplate;
             templateMap['dateinput'] = dateInputTemplate;
             templateMap['selector'] = selectorTemplate;
             templateMap['auto'] = autoTemplate;
+            templateMap['li'] = liTemplate;
 
             return {
                 render: function (name, dict) {
@@ -294,10 +299,13 @@
                             var widgetContent = "";
                             for (var i = 0; i < widget_list.length; i++) {
                                 var widget = widget_list[i];
-                                widgetContent += '<li>' + widget.extractHtmlContent() + '</li>';
+                                var liDic = widget.getContainerStyle();
+                                liDic['id'] = widget.getWidgetId();
+                                liDic['content'] = widget.extractHtmlContent();
+                                widgetContent += template.render('li', liDic);
                             }
                             PJF.html.append(el, widgetContent);
-                            subContainer.forEach(function(container){
+                            subContainer.forEach(function (container) {
                                 container.insertHtmlDom();
                             });
                         },
@@ -311,15 +319,6 @@
                                 }
                             }
                         },
-/*
-
-                        dynamicAddWidget: function (widget) {
-                            widget_list.push(widget);
-                            PJF.html.append(el, '<li>' + widget.extractHtmlContent() + '</li>');
-                            widget.instantiate();
-                        },
-*/
-
                         getGroupName: function () {
                             return groupName;
                         },
@@ -346,25 +345,29 @@
                         },
                         getValuePost: function (data) {
                             return data;
-                        }
+                        },
+                        containerStyle: {'class': '', 'style': ''}
                     };
                     if (attr['pjfAttr']) {
                         var attrs = mergeAttr(defaultAttr, attr);
                         attrs['pjfAttr']['dom'] = 'dom_' + attrs['id'];
                         attrs['postProcessor'] = defaultPostFunc[attrs['type']];
-                        if (attr['getValue'] instanceof Function) {
-                            var getValueFunc = attr['getValue'];
-                        }
+
                     } else {
                         throw new Error('初始化PJF组件的属性需放置在pjfAttr节点下');
                     }
                     return {
-                        getWidgetId:function(){
+                        getWidgetId: function () {
                             return attrs['id'];
+                        },
+                        getContainerStyle: function () {
+                            return attrs['containerStyle'];
                         },
                         extractHtmlContent: function () {
                             if (attrs['pjfAttr']['required']) {
                                 attrs.desc = '<a class="red" id = "star_' + attrs.id + '">*</a>' + attrs.desc;
+                            } else {
+                                attrs.desc = '<a class="red" id = "star_' + attrs.id + '" style="display:none">*</a>' + attrs.desc;
                             }
                             return template.render(attrs.type, {'id': attrs.id, 'desc': attrs.desc});
                         },
@@ -380,6 +383,9 @@
                             if (attrs['widget'].setRequired) {
                                 attrs['widget'].setRequired(flag);
                             }
+                        },
+                        setDisplay: function (flag) {
+                            PJF.html.displayArea(attrs['id'] + '_container', flag);
                         },
                         getValuePost: attrs['getValuePost'],
                         setValuePre: attrs['setValuePre'],
@@ -465,15 +471,12 @@
                     var parseContainer = function (data, upperGroupName) {
                         if (upperGroupName) {
                             if (data['groupName']) {
-//                                data['groupName'] = upperGroupName + '.' + data['groupName'];
                             } else {
                                 throw new Error('有groupName属性的container的下级container也必须具有groupName属性');
                             }
                         }
                         if (data['type'] === 'ul') {
                             var ul_content = pciMVC.View.UlContent(data);
-//                            containers[ul_content.getId()] = ul_content;
-
                             for (var i = 0; i < data['children'].length; i++) {
                                 var child = data['children'][i];
                                 if (child['category'] === 'widget') {
@@ -483,11 +486,7 @@
                                     ul_content.addData(child['attr']); //纯值对象的attr放入容器中
                                 }
                                 if (child['category'] === 'container') {
-//                                    if (typeof ul_content.getGroupName() === 'string') {
                                     ul_content.addContainer(parseContainer(child, ul_content.getGroupName()));
-//                                    } else {
-//                                        throw '上级container的groupName属性不能为空';
-//                                    }
 
                                 }
 
@@ -552,14 +551,18 @@
                         }
                     };
 
-                    for (var i = 0; i < containers.length; i++) {
-                        var container = containers[i];
-                        container.insertHtmlDom();
+                    var addContainerToForm = function(container,form){
                         if (container.getGroupName()) {
                             form.addItemByGroup(container.getGroupName(), instantiateContainer(container));
                         } else {
                             form.mergerForm(instantiateContainer(container));
                         }
+                    };
+
+                    for (var i = 0; i < containers.length; i++) {
+                        var container = containers[i];
+                        container.insertHtmlDom();
+                        addContainerToForm(container,form);
                     }
 
                     return {
@@ -569,7 +572,7 @@
                         add: function (data) {
                             var container = parseContainer(data);
                             container.insertHtmlDom();
-                            instantiateContainer(container);
+                            addContainerToForm(container,form);
                         }
 
                     }
@@ -667,6 +670,19 @@
                                 var itemsInGroup = getDeepData(items, keylist);
                                 iterateWidget(itemsInGroup, args);
                             }
+                        },
+                        executeByNameList:function(names, funcname){
+                            if (arguments.length > 1) {
+                                var args = Array.prototype.slice.call(arguments);
+                                args.shift();
+                                for (var i = 0; i < names.length; i++) {
+                                    var name = names[i];
+                                    var keylist = name.split('.');
+                                    var itemsInGroup = getDeepData(items, keylist);
+                                    iterateWidget(itemsInGroup, args);
+                                }
+
+                            }
                         }
                     }
 
@@ -675,6 +691,7 @@
                 Item: function (data) {
                     if (data['widget']) {
                         return (function (data) {
+                            var originalValue;
                             var type = 'widget';
                             var widget = data['widget'];
                             var getValueFunc = data['getValue'];
@@ -692,6 +709,9 @@
                                 },
                                 setValue: function (m_data) {
                                     var data = widget.setValuePre(m_data);
+                                    if(originalValue === undefined){
+                                        originalValue = data;
+                                    }
                                     (setValueFunc || (function (data) {
                                         widget.setValue(data);
                                     }))(data);
@@ -706,6 +726,7 @@
                         }(data))
                     } else {
                         return (function (data) {
+                            var originalValue;
                             var value = data.defaultValue;
                             var getValuePost = data.getValuePost || function (data) {
                                 return data
@@ -719,6 +740,9 @@
                                 },
                                 setValue: function (m_data) {
                                     value = setValuePre(m_data);
+                                    if(originalValue === undefined){
+                                        originalValue = value;
+                                    }
                                 },
                                 getValue: function () {
                                     return getValuePost(value);
@@ -762,9 +786,9 @@
                         {name: "test", type: 'String', maxLength: 10, required: true},
                         {name: 'test1', type: 'String', maxLength: 10, required: true},
                         {type: 'Object', name: 'grp2', children: [
-                             {name: 'group1', type: 'String', maxLength: 20, required: true},
-                             {name: 'group2', type: 'String', maxLength: 20, required: true}
-                         ]},
+                            {name: 'group1', type: 'String', maxLength: 20, required: true},
+                            {name: 'group2', type: 'String', maxLength: 20, required: true}
+                        ]},
                         {type: 'Array', name: 'grp1', children: [
                             {name: 'group5', type: 'String', maxLength: 20, required: true},
                             {name: 'group4', type: 'String', maxLength: 20, required: true}
@@ -842,7 +866,7 @@
                         document.body.appendChild(_div);
                         _div.innerHTML = "<span style='font-size:13px;line-height:30px;display:block;color:#FFFFFF;background:rgb(43, 129, 175);';><span style='padding-left:30px;'>挡板测试错误提示</span></span>";
                         for (var k in errorMsg) {
-                            _div.innerHTML += "<div style='background:rgb(210, 224, 230);line-height:25px;color:#2b81af'><span style='color:red;margin-left:30px;'>*&nbsp;</span>" + errorMsg[k]+"</div>";
+                            _div.innerHTML += "<div style='background:rgb(210, 224, 230);line-height:25px;color:#2b81af'><span style='color:red;margin-left:30px;'>*&nbsp;</span>" + errorMsg[k] + "</div>";
                         }
                     } else {
                         config.callback("回调函数数据");
