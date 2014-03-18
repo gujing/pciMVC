@@ -4,13 +4,19 @@ PJF.html.bodyReady(function () {
     root.view = {category: 'form', el: 'form_trans', children: [
         {
             category: 'container', type: 'ul', el: 'ul_part1', children: [
-            {category: 'widget', attr: {id: 't_id', desc: '文本框1', type: 'textfield', getValuePost: function (data) {
+            {category: 'widget', attr: {id: 't_id', desc: '文本框', type: 'textfield', getValuePost: function (data) {
                 return data + 'post'
             }, pjfAttr: {name: 'test'}}},
-            {category: 'widget', attr: {desc: '文本框2', type: 'textfield', getValuePost: function (data) {
-                return data + 'post'
-            }, pjfAttr: {name: 'test1'}}},
-            {category: 'widget', attr: {desc: '结束日期', type: 'dateinput', pjfAttr: {name: 'endTime'}}}
+            {category: 'widget', attr: {desc: '结束日期', type: 'dateinput', pjfAttr: {name: 'endTime'}}},
+            {category: 'widget', attr: {desc: '单选按钮', type: 'radio', pjfAttr: {name: 'radio', labels: ['选项1', '选项2', '选项3'], values: ['1', '2', '3']}}},
+            {category: 'widget', attr: {desc: '按钮文本框', type: 'buttonfield', buttons: [
+                {type: 'defined', desc: '取值', onclick: function (field) {
+                    alert(field.getValue())
+                }},
+                {type: 'defined', desc: '设值', onclick: function (field) {
+                    field.setValue('4576568976')
+                }}
+            ], pjfAttr: {name: 'buttonfield',readonly:true}}}
         ]
         },
         {
@@ -28,23 +34,36 @@ PJF.html.bodyReady(function () {
         }
     ]};
 
+    //根据定义的数据渲染界面
     var form = pciMVC.Model.FormInstantiator(root.view).getForm();
     root.handler = form;
     console.log(root);
 
-
+//对一个组内的所有要素执行方法
     form.executeInGroup('grp1', 'setRequired', true);
-    form.executeByNameList(['test', 'test1'], 'setDisplay', false);
 
+    //对多个组件进行统一操作的方法
+    form.executeByNameList(['test', 'endTime'], 'setDisplay', false);
+
+    //根据name取出form中的item然后执行方法
+    form.getItemByName('grp1.group1').execute('setReadOnly', true);
+
+    //对整个form进行设值操作
     var testData = {test: '1111', endTime: '20121212', grp1: [
         {group1: '2223', group2: '5632'}
     ]};
     form.setFormData(testData);
+
+    //取出form中的数据
     console.log(form.getFormData());
-    //使用
+
+    //使用id属性获取widget对象
     console.log(pciMVC.Util.getWidgetById('t_id').getValue());
 
+    //从widget对象获取原生pjf组件
+    console.log(pciMVC.Util.getWidgetById('t_id').getPJFWidget());
 
+//根据接口定义进行数据校验
     $.get("../data/simple.xml", function (xml) {
         var jsonObj = $.xml2json(xml);
         if (jsonObj) {

@@ -22,7 +22,8 @@
             'textfield': PJF.ui.textfield,
             'dateinput': PJF.ui.dateinput,
             'selector': PJF.ui.select,
-            'auto': PJF.ui.autoComplete
+            'auto': PJF.ui.autoComplete,
+            'radio': PJF.ui.radio
         };
 
         var defaultPostFunc = {
@@ -56,16 +57,24 @@
                         }
                     })
                 }
+            },
+            'radio': function () {
+            },
+            'buttonfield': function () {
             }
         };
 
         var template = (function () {
             var templateMap = {};
 
-            var textFieldTemplate = '<label id="label_{{:id}}">{{:desc}}</label><input id="dom_{{:id}}" type="text"/>';
-            var dateInputTemplate = '<label id="label_{{:id}}">{{:desc}}</label><input id="dom_{{:id}}" type="text"/>';
-            var selectorTemplate = '<label id="label_{{:id}}">{{:desc}}</label><span id="dom_{{:id}}" />';
-            var autoTemplate = '<label id="label_{{:id}}">{{:desc}}</label><input id="dom_{{:id}}" type="text"/>';
+            var textFieldTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
+            var dateInputTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
+            var selectorTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
+            var radioTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
+            var autoTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
+            var buttonFieldTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
+            var buttonTemplate = '<span id="button_{{:id}}" />';
+
 
             var liTemplate = '<li id="{{:id}}_container" class="{{:class}}" style="{{:style}}">{{:content}}</li>';
 
@@ -73,7 +82,10 @@
             templateMap['dateinput'] = dateInputTemplate;
             templateMap['selector'] = selectorTemplate;
             templateMap['auto'] = autoTemplate;
+            templateMap['radio'] = radioTemplate;
             templateMap['li'] = liTemplate;
+            templateMap['buttonfield'] = buttonFieldTemplate;
+            templateMap['button'] = buttonTemplate;
 
             return {
                 render: function (name, dict) {
@@ -346,15 +358,23 @@
                         getValuePost: function (data) {
                             return data;
                         },
-                        containerStyle: {'class': '', 'style': ''}
+                        containerStyle: {'class': '', 'style': ''},
+                        assistButtons: {}
                     };
                     if (attr['pjfAttr']) {
                         var attrs = mergeAttr(defaultAttr, attr);
                         attrs['pjfAttr']['dom'] = 'dom_' + attrs['id'];
                         attrs['postProcessor'] = defaultPostFunc[attrs['type']];
-
                     } else {
                         throw new Error('初始化PJF组件的属性需放置在pjfAttr节点下');
+                    }
+                    if (attrs['type'] === 'buttonfield') {
+                        attrs['containerStyle'] = {'class': 'width_auto', 'style': 'margin-left:0;'};
+                        attr['buttons'].forEach(function (button) {
+                            if (button['type'] === 'defined') {
+                                attrs['assistButtons'][id_generate()] = {desc: button['desc'], onclick: button['onclick']}
+                            }
+                        })
                     }
                     return {
                         getWidgetId: function () {
@@ -369,12 +389,36 @@
                             } else {
                                 attrs.desc = '<a class="red" id = "star_' + attrs.id + '" style="display:none">*</a>' + attrs.desc;
                             }
-                            return template.render(attrs.type, {'id': attrs.id, 'desc': attrs.desc});
+                            var htmlContent = template.render(attrs.type, {'id': attrs.id, 'desc': attrs.desc});
+                            if (attrs['type'] === 'buttonfield') {
+                                for (var button_id in attrs['assistButtons']) {
+                                    htmlContent += template.render('button', {'id': button_id});
+                                }
+                            }
+                            return htmlContent;
                         },
                         instantiate: function () {
+                            var that = this;
                             console.log(attrs['id']);
                             attrs['label'] = new PJF.ui.label({dom: 'label_' + attrs.id});
-                            attrs['widget'] = new widgetEnum[attrs.type](attrs['pjfAttr']);
+                            if (attrs['type'] === 'buttonfield') {
+                                attrs['widget'] = new widgetEnum['textfield'](attrs['pjfAttr']);
+                                for (var button_id in attrs['assistButtons']) {
+                                    var button = attrs['assistButtons'][button_id];
+                                    new PJF.ui.linkButton({
+                                        dom: 'button_' + button_id,
+                                        name: button['desc'],
+                                        style: 'assistant',
+                                        onclick: (function (onclickFunc) {
+                                            return function () {
+                                                onclickFunc(that);
+                                            }
+                                        }(button['onclick']))
+                                    });
+                                }
+                            } else {
+                                attrs['widget'] = new widgetEnum[attrs.type](attrs['pjfAttr']);
+                            }
                             attrs.postProcessor();
                             attrs.initialize();
                         },
@@ -455,7 +499,11 @@
                                 if (this.hasOwnProperty(funcname)) {
                                     this[funcname].apply(this, args);
                                 } else {
-                                    attrs['widget'][funcname].apply(attrs['widget'], args);
+                                    if (attrs['widget'][funcname] instanceof Function) {
+                                        attrs['widget'][funcname].apply(attrs['widget'], args);
+                                    } else {
+                                        throw new Error(attrs['type'] + attrs['id'] + ' has no method ' + funcname);
+                                    }
                                 }
                             }
                         }
@@ -551,7 +599,7 @@
                         }
                     };
 
-                    var addContainerToForm = function(container,form){
+                    var addContainerToForm = function (container, form) {
                         if (container.getGroupName()) {
                             form.addItemByGroup(container.getGroupName(), instantiateContainer(container));
                         } else {
@@ -562,7 +610,7 @@
                     for (var i = 0; i < containers.length; i++) {
                         var container = containers[i];
                         container.insertHtmlDom();
-                        addContainerToForm(container,form);
+                        addContainerToForm(container, form);
                     }
 
                     return {
@@ -572,7 +620,7 @@
                         add: function (data) {
                             var container = parseContainer(data);
                             container.insertHtmlDom();
-                            addContainerToForm(container,form);
+                            addContainerToForm(container, form);
                         }
 
                     }
@@ -671,7 +719,7 @@
                                 iterateWidget(itemsInGroup, args);
                             }
                         },
-                        executeByNameList:function(names, funcname){
+                        executeByNameList: function (names, funcname) {
                             if (arguments.length > 1) {
                                 var args = Array.prototype.slice.call(arguments);
                                 args.shift();
@@ -709,7 +757,7 @@
                                 },
                                 setValue: function (m_data) {
                                     var data = widget.setValuePre(m_data);
-                                    if(originalValue === undefined){
+                                    if (originalValue === undefined) {
                                         originalValue = data;
                                     }
                                     (setValueFunc || (function (data) {
@@ -740,7 +788,7 @@
                                 },
                                 setValue: function (m_data) {
                                     value = setValuePre(m_data);
-                                    if(originalValue === undefined){
+                                    if (originalValue === undefined) {
                                         originalValue = value;
                                     }
                                 },
