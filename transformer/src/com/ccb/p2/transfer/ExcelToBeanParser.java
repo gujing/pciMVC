@@ -68,8 +68,10 @@ public class ExcelToBeanParser {
         return value;
     }
 
-    private void readExcel() {
-        File file = new File("input/template.xlsx");
+    private void readExcel(String fileName) {
+        requestFields.clear();
+        responsetFields.clear();
+        File file = new File(fileName);
         try {
             FileInputStream fis = new FileInputStream(file);
             XSSFWorkbook workBook = new XSSFWorkbook(fis);
@@ -170,9 +172,22 @@ public class ExcelToBeanParser {
 
     public static void main(String[] args) {
         ExcelToBeanParser excelToBeanParser = new ExcelToBeanParser();
-        excelToBeanParser.readExcel();
+
         XMLUtil xmlUtil = new XMLUtil();
-        xmlUtil.writeXML(xmlUtil.parseItemBeans(excelToBeanParser.getRequestFields()));
+
+        String inputFolder = args[0];
+        String outputFolder = args[1];
+        File dir = new File(inputFolder);
+        if(dir.isDirectory()){
+            File[] files = dir.listFiles();
+            for(File file : files){
+                System.out.println(file.getName().split("\\.")[0]);
+                System.out.println(file.getAbsolutePath());
+                excelToBeanParser.readExcel(inputFolder + "/" + file.getName());
+                xmlUtil.writeXML(xmlUtil.parseItemBeans(excelToBeanParser.getRequestFields()),
+                        outputFolder +"/"+file.getName().split("\\.")[0]+".xml");
+            }
+        }
     }
 }
 

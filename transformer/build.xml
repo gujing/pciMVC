@@ -1,0 +1,22 @@
+<project name="transformer" basedir="." >
+    <property name="inputFolder" value="input"/>
+    <property name="outputFolder" value="input"/>
+    <property name="classes" value="./out/production/transformer"/>
+    <property name="lib" value="./lib"/>
+
+    <target name="init">
+        <path id="ant.run.lib.path">
+            <pathelement path="${classes}"/>
+            <fileset dir="${lib}">
+                <include name="**/*.jar"/>
+            </fileset>
+        </path>
+    </target>
+
+    <target name="run" depends="init">
+        <java fork="true" classname="com.ccb.p2.transfer.ExcelToBeanParser">
+            <classpath refid="ant.run.lib.path"/>
+            <arg value="${inputFolder}"/>
+        </java>
+    </target>
+</project>

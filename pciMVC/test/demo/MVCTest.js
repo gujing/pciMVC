@@ -8,8 +8,16 @@ PJF.html.bodyReady(function () {
                 return data + 'post'
             }, pjfAttr: {name: 'test'}}},
             {category: 'widget', attr: {desc: '结束日期', type: 'dateinput', pjfAttr: {name: 'endTime'}}},
+            {category: 'widget', attr: {desc: '开始日期', type: 'dateinput', buttons: [
+                {type: 'defined', desc: '取值', onclick: function (field) {
+                    alert(field.getValue())
+                }},
+                {type: 'defined', desc: '设值', onclick: function (field) {
+                    field.setValue('4576568976')
+                }}
+            ],pjfAttr: {name: 'startTime'}}},
             {category: 'widget', attr: {desc: '单选按钮', type: 'radio', pjfAttr: {name: 'radio', labels: ['选项1', '选项2', '选项3'], values: ['1', '2', '3']}}},
-            {category: 'widget', attr: {desc: '按钮文本框', type: 'buttonfield', buttons: [
+            {category: 'widget', attr: {desc: '按钮文本框', type: 'textfield', oneLine:true, buttons: [
                 {type: 'defined', desc: '取值', onclick: function (field) {
                     alert(field.getValue())
                 }},

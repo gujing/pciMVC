@@ -26,6 +26,46 @@
             'radio': PJF.ui.radio
         };
 
+        var deviceButtonCreater = function () {
+            var defaultFailure = function (msg) {
+                new PJF.ui.messageBox({
+                    style: "warning",
+                    title: "调用失败",
+                    content: msg
+                });
+            };
+
+            var enumButtons = {
+                'card': {desc: '划卡', deviceFunc: function () {
+                    return PJF.communication.client.getCardInfo();
+                }}
+            };
+
+            return {
+                createButton: function (type, successful, failure) {
+                    var button = enumButtons[type];
+                    if (!button) {
+                        throw new Error(type + '不在支持的外设种类列表中');
+                    }
+                    if (!successful) {
+                        throw new Error('成功的回调函数必填');
+                    }
+                    return {
+                        desc: button.desc, onclick: function (that) {
+                            var res = button.deviceFunc();
+                            if (res[0] == 0) {
+                                successful(that, res);
+                            } else {
+                                if (!failure) {
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
         var defaultPostFunc = {
             'textfield': function () {
             },
@@ -59,8 +99,6 @@
                 }
             },
             'radio': function () {
-            },
-            'buttonfield': function () {
             }
         };
 
@@ -72,11 +110,10 @@
             var selectorTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
             var radioTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
             var autoTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
-            var buttonFieldTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
             var buttonTemplate = '<span id="button_{{:id}}" />';
 
 
-            var liTemplate = '<li id="{{:id}}_container" class="{{:class}}" style="{{:style}}">{{:content}}</li>';
+            var liTemplate = '<li id="{{:id}}_container" class="{{:li_class}}" style="{{:li_style}}">{{:content}}</li>';
 
             templateMap['textfield'] = textFieldTemplate;
             templateMap['dateinput'] = dateInputTemplate;
@@ -84,7 +121,6 @@
             templateMap['auto'] = autoTemplate;
             templateMap['radio'] = radioTemplate;
             templateMap['li'] = liTemplate;
-            templateMap['buttonfield'] = buttonFieldTemplate;
             templateMap['button'] = buttonTemplate;
 
             return {
@@ -345,7 +381,6 @@
                 Widget: function (attr) {
                     var rootId = id_generate();
                     var defaultAttr = {
-                        id: rootId,
                         type: 'textfield',
                         desc: '',
                         postProcessor: function () {
@@ -358,18 +393,22 @@
                         getValuePost: function (data) {
                             return data;
                         },
-                        containerStyle: {'class': '', 'style': ''},
+                        containerStyle: {'li_class': '', 'li_style': ''},
                         assistButtons: {}
                     };
                     if (attr['pjfAttr']) {
                         var attrs = mergeAttr(defaultAttr, attr);
+                        attrs['id'] = rootId;
                         attrs['pjfAttr']['dom'] = 'dom_' + attrs['id'];
                         attrs['postProcessor'] = defaultPostFunc[attrs['type']];
                     } else {
                         throw new Error('初始化PJF组件的属性需放置在pjfAttr节点下');
                     }
-                    if (attrs['type'] === 'buttonfield') {
-                        attrs['containerStyle'] = {'class': 'width_auto', 'style': 'margin-left:0;'};
+                    if (attrs['buttons'] instanceof Array && attrs['buttons'].length > 0) {
+                        attrs['containerStyle'] = {'li_class': 'hidden_class', 'li_style': ''};
+                        if(attrs['oneLine'] === true){
+                            attrs['containerStyle'] = {'li_class': 'width_auto', 'li_style': ''};
+                        }
                         attr['buttons'].forEach(function (button) {
                             if (button['type'] === 'defined') {
                                 attrs['assistButtons'][id_generate()] = {desc: button['desc'], onclick: button['onclick']}
@@ -390,10 +429,8 @@
                                 attrs.desc = '<a class="red" id = "star_' + attrs.id + '" style="display:none">*</a>' + attrs.desc;
                             }
                             var htmlContent = template.render(attrs.type, {'id': attrs.id, 'desc': attrs.desc});
-                            if (attrs['type'] === 'buttonfield') {
-                                for (var button_id in attrs['assistButtons']) {
-                                    htmlContent += template.render('button', {'id': button_id});
-                                }
+                            for (var button_id in attrs['assistButtons']) {
+                                htmlContent += template.render('button', {'id': button_id});
                             }
                             return htmlContent;
                         },
@@ -401,23 +438,20 @@
                             var that = this;
                             console.log(attrs['id']);
                             attrs['label'] = new PJF.ui.label({dom: 'label_' + attrs.id});
-                            if (attrs['type'] === 'buttonfield') {
-                                attrs['widget'] = new widgetEnum['textfield'](attrs['pjfAttr']);
-                                for (var button_id in attrs['assistButtons']) {
-                                    var button = attrs['assistButtons'][button_id];
-                                    new PJF.ui.linkButton({
-                                        dom: 'button_' + button_id,
-                                        name: button['desc'],
-                                        style: 'assistant',
-                                        onclick: (function (onclickFunc) {
-                                            return function () {
-                                                onclickFunc(that);
-                                            }
-                                        }(button['onclick']))
-                                    });
-                                }
-                            } else {
-                                attrs['widget'] = new widgetEnum[attrs.type](attrs['pjfAttr']);
+
+                            attrs['widget'] = new widgetEnum[attrs.type](attrs['pjfAttr']);
+                            for (var button_id in attrs['assistButtons']) {
+                                var button = attrs['assistButtons'][button_id];
+                                new PJF.ui.linkButton({
+                                    dom: 'button_' + button_id,
+                                    name: button['desc'],
+                                    style: 'assistant',
+                                    onclick: (function (onclickFunc) {
+                                        return function () {
+                                            onclickFunc(that);
+                                        }
+                                    }(button['onclick']))
+                                });
                             }
                             attrs.postProcessor();
                             attrs.initialize();
@@ -497,10 +531,10 @@
                                 var args = Array.prototype.slice.call(arguments);
                                 args.shift();
                                 if (this.hasOwnProperty(funcname)) {
-                                    this[funcname].apply(this, args);
+                                    return this[funcname].apply(this, args);
                                 } else {
                                     if (attrs['widget'][funcname] instanceof Function) {
-                                        attrs['widget'][funcname].apply(attrs['widget'], args);
+                                        return attrs['widget'][funcname].apply(attrs['widget'], args);
                                     } else {
                                         throw new Error(attrs['type'] + attrs['id'] + ' has no method ' + funcname);
                                     }
@@ -753,7 +787,7 @@
                                 },
                                 execute: function () {
                                     var args = Array.prototype.slice.call(arguments);
-                                    widget.execute.apply(widget, args);
+                                    return widget.execute.apply(widget, args);
                                 },
                                 setValue: function (m_data) {
                                     var data = widget.setValuePre(m_data);

@@ -109,10 +109,10 @@ public class XMLUtil {
         return document;
     }
 
-    public void writeXML(Document document) {
+    public void writeXML(Document document, String fileName) {
         try {
             OutputFormat format = OutputFormat.createPrettyPrint();
-            Writer fileWriter = new FileWriter("output/res.xml");
+            Writer fileWriter = new FileWriter(fileName);
             XMLWriter xmlWriter = new XMLWriter(fileWriter, format);
             xmlWriter.write(document);
             xmlWriter.flush();
