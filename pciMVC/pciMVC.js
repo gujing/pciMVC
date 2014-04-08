@@ -27,7 +27,7 @@
             'dateSpan': PJF.ui.dateSpan
         };
 
-        var deviceButtonCreater = function () {
+        var deviceButtonCreater = (function () {
             var defaultFailure = function (msg) {
                 new PJF.ui.messageBox({
                     style: "warning",
@@ -37,13 +37,16 @@
             };
 
             var enumButtons = {
-                'card': {desc: '划卡', deviceFunc: function () {
+                'card': {desc: '划卡', deviceFunc: function (additionAttr) {
                     return PJF.communication.client.getCardInfo();
+                }},
+                'test': {desc: '测试外设', deviceFunc: function (additionAttr) {
+                    return [1, '测试成功'];
                 }}
             };
 
             return {
-                createButton: function (type, successful, failure) {
+                createButton: function (type, successful, failure, additionAttr) {
                     var button = enumButtons[type];
                     if (!button) {
                         throw new Error(type + '不在支持的外设种类列表中');
@@ -53,19 +56,28 @@
                     }
                     return {
                         desc: button.desc, onclick: function (that) {
-                            var res = button.deviceFunc();
-                            if (res[0] == 0) {
-                                successful(that, res);
-                            } else {
-                                if (!failure) {
-
+                            //this.disabled();
+                            try {
+                                var res = button.deviceFunc(additionAttr);
+                                if (res[0] == 0) {
+                                    successful(that, res);
+                                } else {
+                                    //failure 不存在或返回不为false时执行默认方法
+                                    if (failure && (failure() === false)) {
+                                    } else {
+                                        defaultFailure('调用失败');
+                                    }
                                 }
+                            } catch (e) {
+                                //this.enabled();
+                                throw e;
                             }
+
                         }
                     }
                 }
             }
-        };
+        }());
 
         var defaultPostFunc = {
             'textfield': function () {
@@ -423,6 +435,8 @@
                         attr['buttons'].forEach(function (button) {
                             if (button['type'] === 'defined') {
                                 attrs['assistButtons'][id_generate()] = {desc: button['desc'], onclick: button['onclick']}
+                            } else {
+                                attrs['assistButtons'][id_generate()] = deviceButtonCreater.createButton(button['type'], button['successful'], button['failure'], button['additionAttr']);
                             }
                         })
                     }

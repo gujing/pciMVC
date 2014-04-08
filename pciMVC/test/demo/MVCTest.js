@@ -21,9 +21,9 @@ PJF.html.bodyReady(function () {
                 {type: 'defined', desc: '取值', onclick: function (field) {
                     alert(field.getValue())
                 }},
-                {type: 'defined', desc: '设值', onclick: function (field) {
-                    field.setValue('4576568976')
-                }}
+                {type: 'test', desc: '设值', successful: function (field, res) {
+                    field.setValue(res[1]);
+                },failure:function(){}}
             ], pjfAttr: {name: 'buttonfield',readonly:true}}}
         ]
         },
@@ -71,28 +71,28 @@ PJF.html.bodyReady(function () {
     //从widget对象获取原生pjf组件
     console.log(pciMVC.Util.getWidgetById('t_id').getPJFWidget());
 
-//根据接口定义进行数据校验
-    $.get("../data/simple.xml", function (xml) {
-        var jsonObj = $.xml2json(xml);
-        if (jsonObj) {
-            var newJson = new Array();
-            jsonObj = jsonObj.node;
-            for (var i = 0; i < jsonObj.length; i++) {
-                if (jsonObj[i].children) {
-                    jsonObj[i].children = jsonObj[i].children.node;
-                }
-                newJson.push(jsonObj[i]);
-            }
-            console.log(PJF.util.json2str(newJson));
-        }
-
-    });
-
-    pciMVC.Util.UnitTest({
-        fwTranId: 'A00000test',
-        jsonData: testData,
-        callback: function (data) {
-            alert(data)
-        }
-    });
+////根据接口定义进行数据校验
+//    $.get("../data/simple.xml", function (xml) {
+//        var jsonObj = $.xml2json(xml);
+//        if (jsonObj) {
+//            var newJson = new Array();
+//            jsonObj = jsonObj.node;
+//            for (var i = 0; i < jsonObj.length; i++) {
+//                if (jsonObj[i].children) {
+//                    jsonObj[i].children = jsonObj[i].children.node;
+//                }
+//                newJson.push(jsonObj[i]);
+//            }
+//            console.log(PJF.util.json2str(newJson));
+//        }
+//
+//    });
+//
+//    pciMVC.Util.UnitTest({
+//        fwTranId: 'A00000test',
+//        jsonData: testData,
+//        callback: function (data) {
+//            alert(data)
+//        }
+//    });
 });

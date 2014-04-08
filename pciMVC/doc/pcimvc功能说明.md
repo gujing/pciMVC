@@ -11,7 +11,7 @@
 2014/3/10|0.0.2a| 修改widget与item关联关系以适配一个组件对应多个数据项的场景。新增Util模块提供工具类方法，调整widget，data部分属性|古晶
 2014/3/17|0.0.3a|修复IE9以下版本不支持数组forEach方法的问题。调整container所具有的属性,增加groupType属性。 widget增加id属性，可以通过id获取widget对象|古晶
 2014/3/17|0.0.3a|form新增executeByNameList方法。item增加对初始值的存储|古晶
-2014/3/19|0.0.4a|增加radio组件支持，widget新增buttons属性用于定义辅助按钮|古晶
+2014/4/8|0.0.4a|增加buttons属性用于添加辅助按钮，并提供外设组件的封装|古晶
 
 ##[设计思路](id:anchor1)
 通过对数据项的描述代替之前创建组件所需的html代码和JS代码。建立组件与数据项的关联关系，并提供对于数据通用性操作的统一处理。
@@ -65,24 +65,25 @@ widget用于描述需要在界面上展示的组件
 category|-|类别定义，此处为widget
 attr|-|初始化所需属性
 -|id|(可选)定义widget对象id，通过`pciMVC.Util.getWidgetById`方法获取widget对象，**此id不同于pjf组件的id属性**
--|type|实例化组件类型，现支持`'textfield': PJF.ui.textfield,'dateinput': PJF.ui.dateinput,'selector': PJF.ui.select,'auto': PJF.ui.autoComplete`
+-|type|实例化组件类型，现支持`'textfield': PJF.ui.textfield,'dateinput': PJF.ui.dateinput,'selector': PJF.ui.select,'auto': PJF.ui.autoComplete,'radio': PJF.ui.radio,'dateSpan': PJF.ui.dateSpan`
 -|desc|组件描述，代替之前代码中label组件
--|buttons|辅助按钮描述，结构定义为数组，每条记录代表一个按钮，按钮属性见`button`
 -|pjfAttr|用于实例化pjf组件所需传入参数（dom属性无需传入）
 -|initialize|(可选)pjf组件实例化完成调用完成额外初始化工作
 -|getValuePost|(可选)取值后置操作
 -|setValuePre|(可选)设值前置操作
+-|buttons|(可选)定义组件的辅助按钮，格式为数组
 
 #### button
-button用于描述widget具有的辅助按钮
+button为widget辅助按钮的属性
 
-属性名|子属性|说明
-----|---|--
-type|-|辅助按钮类型：`defined`为自定义
-desc|-|按钮显示的文本，**类型为自定义时有效**
-onclick|-|按钮的点击事件，传入参数field为当前widget组件的引用，**类型为自定义时有效**
-successful|-|调用外设成功后的回调函数，输入参数为成功后的结果数组，**类型为外设时有效**
-failure|-|调用外设失败后的回调函数，输入参数为失败后的错误信息，**类型为外设时有效**
+属性名|说明
+----|--
+type|按钮类型，自定义为`defined`，其他为封装的外设包括
+desc|按钮显示的文字描述，类型为`defined`时有效
+onclick|按钮点击的事件，具有参数`field`指向当前的widget，类型为`defined`时有效
+successful|外设调用成功的回调函数，参数`field`指向当前的widget，参数`res`为外设调用返回的结果
+failure|(可选)自定义失败处理逻辑
+
 
 ### data
 data用于描述不在界面上展示的数据项
