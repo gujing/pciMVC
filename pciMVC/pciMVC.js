@@ -23,7 +23,8 @@
             'dateinput': PJF.ui.dateinput,
             'selector': PJF.ui.select,
             'auto': PJF.ui.autoComplete,
-            'radio': PJF.ui.radio
+            'radio': PJF.ui.radio,
+            'dateSpan': PJF.ui.dateSpan
         };
 
         var deviceButtonCreater = function () {
@@ -80,10 +81,12 @@
                         clcd: that['pjfAttr'].clcd,
                         success: function (data) {
                             that['widget'].addOptions(reformatStandCode(data, 'selector'));
+                            if (that['pjfAttr'].defaultValue) {
+                                that['widget'].setValue(that['pjfAttr'].defaultValue);
+                            }
                         }
                     })
                 }
-
             },
             'auto': function () {
                 var that = this;
@@ -94,11 +97,17 @@
                         clcd: that['pjfAttr'].clcd,
                         success: function (data) {
                             that['widget'].addOptions(reformatStandCode(data, 'auto'));
+                            if (that['pjfAttr'].defaultValue) {
+                                that['widget'].setValue(that['pjfAttr'].defaultValue);
+                            }
                         }
                     })
                 }
             },
             'radio': function () {
+            },
+            'dateSpan': function () {
+
             }
         };
 
@@ -107,6 +116,7 @@
 
             var textFieldTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
             var dateInputTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
+            var dateSpanTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
             var selectorTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
             var radioTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
             var autoTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
@@ -117,6 +127,7 @@
 
             templateMap['textfield'] = textFieldTemplate;
             templateMap['dateinput'] = dateInputTemplate;
+            templateMap['dateSpan'] = dateSpanTemplate;
             templateMap['selector'] = selectorTemplate;
             templateMap['auto'] = autoTemplate;
             templateMap['radio'] = radioTemplate;
@@ -406,7 +417,7 @@
                     }
                     if (attrs['buttons'] instanceof Array && attrs['buttons'].length > 0) {
                         attrs['containerStyle'] = {'li_class': 'hidden_class', 'li_style': ''};
-                        if(attrs['oneLine'] === true){
+                        if (attrs['oneLine'] === true) {
                             attrs['containerStyle'] = {'li_class': 'width_auto', 'li_style': ''};
                         }
                         attr['buttons'].forEach(function (button) {
