@@ -24,7 +24,8 @@
             'selector': PJF.ui.select,
             'auto': PJF.ui.autoComplete,
             'radio': PJF.ui.radio,
-            'dateSpan': PJF.ui.dateSpan
+            'dateSpan': PJF.ui.dateSpan,
+            'areaSelector': PJF.ui.areaSelector
         };
 
         var deviceButtonCreater = (function () {
@@ -40,8 +41,14 @@
                 'card': {desc: '划卡', deviceFunc: function (additionAttr) {
                     return PJF.communication.client.getCardInfo();
                 }},
+                'IcCard': {desc: '划IC卡', deviceFunc: function (additionAttr) {
+                    return PJF.communication.client.getIcCardInfo('');
+                }},
+                'IdCard': {desc: '读身份证', deviceFunc: function (additionAttr) {
+                    return PJF.communication.client.getIdentityCardInfo();
+                }},
                 'test': {desc: '测试外设', deviceFunc: function (additionAttr) {
-                    return [1, '测试成功'];
+                    return [0, '测试成功'];
                 }}
             };
 
@@ -79,48 +86,45 @@
             }
         }());
 
-        var defaultPostFunc = {
-            'textfield': function () {
-            },
-            'dateinput': function () {
-            },
-            'selector': function () {
-                var that = this;
-                if (that['pjfAttr'].categoryId) {
-                    new PJF.communication.getStandardCode({
-                        categoryId: that['pjfAttr'].categoryId,
-                        appId: that['pjfAttr'].appId,
-                        clcd: that['pjfAttr'].clcd,
-                        success: function (data) {
-                            that['widget'].addOptions(reformatStandCode(data, 'selector'));
-                            if (that['pjfAttr'].defaultValue) {
-                                that['widget'].setValue(that['pjfAttr'].defaultValue);
-                            }
-                        }
-                    })
-                }
-            },
-            'auto': function () {
-                var that = this;
-                if (that['pjfAttr'].categoryId) {
-                    new PJF.communication.getStandardCode({
-                        categoryId: that['pjfAttr'].categoryId,
-                        appId: that['pjfAttr'].appId,
-                        clcd: that['pjfAttr'].clcd,
-                        success: function (data) {
-                            that['widget'].addOptions(reformatStandCode(data, 'auto'));
-                            if (that['pjfAttr'].defaultValue) {
-                                that['widget'].setValue(that['pjfAttr'].defaultValue);
-                            }
-                        }
-                    })
-                }
-            },
-            'radio': function () {
-            },
-            'dateSpan': function () {
+        var defaultPreFunc = function (type) {
+            switch (type) {
+                case 'selector':
+                    return function () {
+                        var that = this;
 
+                        if (that['pjfAttr'].categoryId) {
+                            new PJF.communication.getStandardCode({
+                                categoryId: that['pjfAttr'].categoryId,
+                                appId: that['pjfAttr'].appId,
+                                clcd: that['pjfAttr'].clcd,
+                                async:false,
+                                success: function (data) {
+                                    that['pjfAttr']['data'] = reformatStandCode(data, 'selector');
+                                }
+                            });
+                        }
+                    };
+                case 'auto':
+                    return function () {
+                        var that = this;
+
+                        if (that['pjfAttr'].categoryId) {
+                            new PJF.communication.getStandardCode({
+                                categoryId: that['pjfAttr'].categoryId,
+                                appId: that['pjfAttr'].appId,
+                                clcd: that['pjfAttr'].clcd,
+                                async:false,
+                                success: function (data) {
+                                    that['pjfAttr']['data'] = reformatStandCode(data, 'auto');
+                                }
+                            });
+                        }
+                    };
+                default :
+                    return function () {
+                    }
             }
+
         };
 
         var template = (function () {
@@ -128,8 +132,9 @@
 
             var textFieldTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
             var dateInputTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
-            var dateSpanTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
+            var dateSpanTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}"/>';
             var selectorTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
+            var areaSelectorTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
             var radioTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
             var autoTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
             var buttonTemplate = '<span id="button_{{:id}}" />';
@@ -141,6 +146,7 @@
             templateMap['dateinput'] = dateInputTemplate;
             templateMap['dateSpan'] = dateSpanTemplate;
             templateMap['selector'] = selectorTemplate;
+            templateMap['areaSelector'] = areaSelectorTemplate;
             templateMap['auto'] = autoTemplate;
             templateMap['radio'] = radioTemplate;
             templateMap['li'] = liTemplate;
@@ -406,7 +412,7 @@
                     var defaultAttr = {
                         type: 'textfield',
                         desc: '',
-                        postProcessor: function () {
+                        preProcessor: function () {
                         },
                         initialize: function () {
                         },
@@ -423,7 +429,7 @@
                         var attrs = mergeAttr(defaultAttr, attr);
                         attrs['id'] = rootId;
                         attrs['pjfAttr']['dom'] = 'dom_' + attrs['id'];
-                        attrs['postProcessor'] = defaultPostFunc[attrs['type']];
+                        attrs['preProcessor'] = defaultPreFunc(attrs['type']);
                     } else {
                         throw new Error('初始化PJF组件的属性需放置在pjfAttr节点下');
                     }
@@ -463,23 +469,27 @@
                             var that = this;
                             console.log(attrs['id']);
                             attrs['label'] = new PJF.ui.label({dom: 'label_' + attrs.id});
-
+                            attrs.preProcessor(attrs['pjfAttr']);
                             attrs['widget'] = new widgetEnum[attrs.type](attrs['pjfAttr']);
                             for (var button_id in attrs['assistButtons']) {
                                 var button = attrs['assistButtons'][button_id];
-                                new PJF.ui.linkButton({
+                                var thisButton = new PJF.ui.linkButton({
                                     dom: 'button_' + button_id,
                                     name: button['desc'],
-                                    style: 'assistant',
-                                    onclick: (function (onclickFunc) {
-                                        return function () {
-                                            onclickFunc(that);
-                                        }
-                                    }(button['onclick']))
+                                    style: 'assistant'
                                 });
+                                thisButton.bindClickHandler((function (onclickFunc, button) {
+                                    return function () {
+                                        button.disable();
+                                        onclickFunc(that);
+                                        button.enable();
+                                    }
+                                }(button['onclick'], thisButton)));
                             }
-                            attrs.postProcessor();
                             attrs.initialize();
+                        },
+                        setLabelDesc:function(value){
+                            attrs['label'].setLabel(value);
                         },
                         setRequired: function (flag) {
                             PJF.html.displayArea("star_" + attrs.id, flag);
@@ -513,28 +523,46 @@
                                 case 'areaSelector':
                                     var provinceName = attrs['pjfAttr']['provinceName'];
                                     var provinceSetFunc = function (data) {
-                                        this.getWidget().execute('setProvinceValue', data);
+                                        attrs['widget'].setProvinceValue(data);
                                     };
                                     var provinceGetFunc = function () {
-                                        return this.getWidget().execute('getProvinceValue');
+                                        return attrs['widget'].getProvinceValue();
                                     };
-                                    keyItems.push({key: provinceName, value: {'widget': this, 'setValue': provinceSetFunc(), 'getValue': provinceGetFunc()}});
+                                    keyItems.push({key: provinceName, value: pciMVC.Model.Item({'widget': this, 'setValue': provinceSetFunc, 'getValue': provinceGetFunc})});
                                     var cityName = attrs['pjfAttr']['cityName'];
                                     var citySetFunc = function (data) {
-                                        this.getWidget().execute('setCityValue', data);
+                                        attrs['widget'].setCityValue(data);
                                     };
                                     var cityGetFunc = function () {
-                                        return this.getWidget().execute('getCityValue');
+                                        return attrs['widget'].getCityValue();
                                     };
-                                    keyItems.push({key: cityName, value: {'widget': this, 'setValue': citySetFunc(), 'getValue': cityGetFunc()}});
+                                    keyItems.push({key: cityName, value: pciMVC.Model.Item({'widget': this, 'setValue': citySetFunc, 'getValue': cityGetFunc})});
                                     var countyName = attrs['pjfAttr']['countyName'];
                                     var countySetFunc = function (data) {
-                                        this.getWidget().execute('setCountyValue', data);
+                                        attrs['widget'].setCountyValue(data);
                                     };
                                     var countyGetFunc = function () {
-                                        return this.getWidget().execute('getCountyValue');
+                                        return attrs['widget'].getCountyValue();
                                     };
-                                    keyItems.push({key: countyName, value: {'widget': this, 'setValue': countySetFunc(), 'getValue': countyGetFunc()}});
+                                    keyItems.push({key: countyName, value: pciMVC.Model.Item({'widget': this, 'setValue': countySetFunc, 'getValue': countyGetFunc})});
+                                    break;
+                                case 'dateSpan':
+                                    var preName = attrs['pjfAttr']['inputNames'][0];
+                                    var preSetFunc = function (data) {
+                                        attrs['widget'].setPreValue(data);
+                                    };
+                                    var preGetFunc = function () {
+                                        return attrs['widget'].getPreValue();
+                                    };
+                                    keyItems.push({key: preName, value: pciMVC.Model.Item({'widget': this, 'setValue': preSetFunc, 'getValue': preGetFunc})});
+                                    var nextName = attrs['pjfAttr']['inputNames'][1];
+                                    var nextSetFunc = function (data) {
+                                        attrs['widget'].setNextValue(data);
+                                    };
+                                    var nextGetFunc = function () {
+                                        return attrs['widget'].getNextValue();
+                                    };
+                                    keyItems.push({key: nextName, value: pciMVC.Model.Item({'widget': this, 'setValue': nextSetFunc, 'getValue': nextGetFunc})});
                                     break;
                                 default :
                                     keyItems.push({key: attrs['pjfAttr']['name'], value: pciMVC.Model.Item({'widget': this})});
