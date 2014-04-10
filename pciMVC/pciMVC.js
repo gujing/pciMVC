@@ -215,6 +215,22 @@
 
         };
 
+        var mergeJsonObject = function (obj, toMergeObj){
+            if (isPureObject(obj) && isPureObject(toMergeObj)) {
+                for (var el in toMergeObj) {
+                    if (obj[el] === undefined) {
+                        obj[el] = toMergeObj[el];
+                    } else if(isPureObject(obj[el]) && isPureObject(toMergeObj[el])){
+                        mergeJsonObject(obj[el],toMergeObj[el]);
+                    }else{
+                        throw '属性' + el + '冲突';
+                    }
+                }
+            } else {
+                throw 'only obj can be merge';
+            }
+        };
+
         var objectPropertyLength = function (obj)//获得对象上的属性个数，不包含对象原形上的属性
         {
             var count = 0;
@@ -903,6 +919,7 @@
                 getWidgetById: function (id) {
                     return widgetStorage[id];
                 },
+                mergeJsonObject: mergeJsonObject,
                 UnitTest: function (config) {
                     //保存错误信息
                     var errorMsg = new Array();

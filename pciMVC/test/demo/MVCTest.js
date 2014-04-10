@@ -94,4 +94,8 @@ PJF.html.bodyReady(function () {
 //            alert(data)
 //        }
 //    });
+    var a ={bb:'aa',aa:'11',cc:{dd:'eee'}};
+    var b ={cc:{ff:'121'},ee:'11'};
+    pciMVC.Util.mergeJsonObject(a,b);
+    console.log(a);
 });
