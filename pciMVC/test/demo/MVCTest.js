@@ -7,7 +7,7 @@ PJF.html.bodyReady(function () {
             {category: 'widget', attr: {id: 't_id', desc: '文本框', type: 'textfield', getValuePost: function (data) {
                 return data + 'post'
             }, pjfAttr: {name: 'test'}}},
-            {category: 'widget', attr: {desc: '结束日期', type: 'dateinput', pjfAttr: {name: 'endTime'}}},
+            {category: 'widget', attr: {desc: '结束日期', type: 'dateinput', pjfAttr: {name: 'endTime', required:true}}},
             {category: 'widget', attr: {desc: '开始日期', type: 'dateinput', buttons: [
                 {type: 'defined', desc: '取值', onclick: function (field) {
                     alert(field.getValue())
@@ -98,4 +98,5 @@ PJF.html.bodyReady(function () {
     var b ={cc:{ff:'121'},ee:'11'};
     pciMVC.Util.mergeJsonObject(a,b);
     console.log(a);
+
 });

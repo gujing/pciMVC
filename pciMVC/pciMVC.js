@@ -5,13 +5,15 @@
  * Time: 下午10:22
  */
 (function (root, factory) {
-    if (!('forEach' in Array.prototype)) {
-        Array.prototype.forEach = function (action, that /*opt*/) {
-            for (var i = 0, n = this.length; i < n; i++)
-                if (i in this)
-                    action.call(that, this[i], i, this);
-        };
-    }
+    /*if (!('forEach' in Array.prototype)) {
+     Array.prototype.forEach = function (action, that */
+    /*opt*/
+    /*) {
+     for (var i = 0, n = this.length; i < n; i++)
+     if (i in this)
+     action.call(that, this[i], i, this);
+     };
+     }*/
     // add forEach method for the browser not support that
     root.pciMVC = factory();
 }(this, function () {
@@ -97,7 +99,7 @@
                                 categoryId: that['pjfAttr'].categoryId,
                                 appId: that['pjfAttr'].appId,
                                 clcd: that['pjfAttr'].clcd,
-                                async:false,
+                                async: false,
                                 success: function (data) {
                                     that['pjfAttr']['data'] = reformatStandCode(data, 'selector');
                                 }
@@ -113,7 +115,7 @@
                                 categoryId: that['pjfAttr'].categoryId,
                                 appId: that['pjfAttr'].appId,
                                 clcd: that['pjfAttr'].clcd,
-                                async:false,
+                                async: false,
                                 success: function (data) {
                                     that['pjfAttr']['data'] = reformatStandCode(data, 'auto');
                                 }
@@ -215,14 +217,14 @@
 
         };
 
-        var mergeJsonObject = function (obj, toMergeObj){
+        var mergeJsonObject = function (obj, toMergeObj) {
             if (isPureObject(obj) && isPureObject(toMergeObj)) {
                 for (var el in toMergeObj) {
                     if (obj[el] === undefined) {
                         obj[el] = toMergeObj[el];
-                    } else if(isPureObject(obj[el]) && isPureObject(toMergeObj[el])){
-                        mergeJsonObject(obj[el],toMergeObj[el]);
-                    }else{
+                    } else if (isPureObject(obj[el]) && isPureObject(toMergeObj[el])) {
+                        mergeJsonObject(obj[el], toMergeObj[el]);
+                    } else {
                         throw '属性' + el + '冲突';
                     }
                 }
@@ -398,9 +400,12 @@
                                 widgetContent += template.render('li', liDic);
                             }
                             PJF.html.append(el, widgetContent);
-                            subContainer.forEach(function (container) {
-                                container.insertHtmlDom();
-                            });
+                            for (var j = 0; j < subContainer.length; j++) {
+                                subContainer[j].insertHtmlDom();
+                            }
+                            /*subContainer.forEach(function (container) {
+                             container.insertHtmlDom();
+                             });*/
                         },
 
                         instantiate: function (fn) {
@@ -454,13 +459,23 @@
                         if (attrs['oneLine'] === true) {
                             attrs['containerStyle'] = {'li_class': 'width_auto', 'li_style': ''};
                         }
-                        attr['buttons'].forEach(function (button) {
+
+                        for (var j = 0; j < attr['buttons'].length; j++) {
+                            var button = attr['buttons'][j];
                             if (button['type'] === 'defined') {
                                 attrs['assistButtons'][id_generate()] = {desc: button['desc'], onclick: button['onclick']}
                             } else {
                                 attrs['assistButtons'][id_generate()] = deviceButtonCreater.createButton(button['type'], button['successful'], button['failure'], button['additionAttr']);
                             }
-                        })
+                        }
+
+                        /*attr['buttons'].forEach(function (button) {
+                         if (button['type'] === 'defined') {
+                         attrs['assistButtons'][id_generate()] = {desc: button['desc'], onclick: button['onclick']}
+                         } else {
+                         attrs['assistButtons'][id_generate()] = deviceButtonCreater.createButton(button['type'], button['successful'], button['failure'], button['additionAttr']);
+                         }
+                         })*/
                     }
                     return {
                         getWidgetId: function () {
@@ -504,7 +519,7 @@
                             }
                             attrs.initialize();
                         },
-                        setLabelDesc:function(value){
+                        setLabelDesc: function (value) {
                             attrs['label'].setLabel(value);
                         },
                         setRequired: function (flag) {
@@ -672,32 +687,62 @@
                         var itemsInGroup = {};
                         if (typeof container.getGroupName() === 'string') {
                             container.instantiate(function (parsedWidget) {
-                                parsedWidget.parseItemsWithKey().forEach(function (keyItem) {
+                                var keyItems = parsedWidget.parseItemsWithKey();
+                                for (var j = 0; j < keyItems.length; j++) {
+                                    var keyItem = keyItems[j];
                                     safeInsertData(itemsInGroup, keyItem['key'].split('.'), keyItem['value']);
-                                });
+                                }
+
+                                /*parsedWidget.parseItemsWithKey().forEach(function (keyItem) {
+                                 safeInsertData(itemsInGroup, keyItem['key'].split('.'), keyItem['value']);
+                                 });*/
                             });
-                            container.getDatas().forEach(function (data) {
-                                safeInsertData(itemsInGroup, data.name.split('.'), pciMVC.Model.Item(data));
-                            });
-                            container.getContainers().forEach(function (data) {
-                                var subContainerData = instantiateContainer(data);
-                                safeInsertData(itemsInGroup, data.getGroupName().split('.'), subContainerData, data.getGroupType());
-                            });
+                            var containerDatas_g = container.getDatas();
+                            for (var k_g = 0; k_g < containerDatas_g.length; k_g++) {
+                                safeInsertData(itemsInGroup, containerDatas_g[k_g].name.split('.'), pciMVC.Model.Item(containerDatas_g[k_g]));
+                            }
+                            /*container.getDatas().forEach(function (data) {
+                             safeInsertData(itemsInGroup, data.name.split('.'), pciMVC.Model.Item(data));
+                             });*/
+                            var subContainers_g = container.getContainers();
+                            for (var l_g = 0; i < subContainers_g.length; l_g++) {
+                                var subContainerData_g = instantiateContainer(subContainers_g[l_g]);
+                                safeInsertData(itemsInGroup, subContainers_g[l_g].getGroupName().split('.'), subContainerData_g, subContainers_g[l_g].getGroupType());
+                            }
+                            /*container.getContainers().forEach(function (data) {
+                             var subContainerData = instantiateContainer(data);
+                             safeInsertData(itemsInGroup, data.getGroupName().split('.'), subContainerData, data.getGroupType());
+                             });*/
 //                            form.addItemByGroup(container.getGroupName(), itemsInGroup);
                             return itemsInGroup;
                         } else {
                             container.instantiate(function (parsedWidget) {
-                                parsedWidget.parseItemsWithKey().forEach(function (keyItem) {
+                                var keyItems = parsedWidget.parseItemsWithKey();
+                                for (var j = 0; j < keyItems.length; j++) {
+                                    var keyItem = keyItems[j];
                                     form.addItem(keyItem['key'], keyItem['value']); //将widget放在Item存入Form
-                                });
+                                }
+
+                                /*parsedWidget.parseItemsWithKey().forEach(function (keyItem) {
+                                 form.addItem(keyItem['key'], keyItem['value']); //将widget放在Item存入Form
+                                 });*/
                             });
-                            container.getDatas().forEach(function (data) {
-                                form.addItem(data.name, pciMVC.Model.Item(data));
-                            });
-                            container.getContainers().forEach(function (data) {
-                                var subContainerData = instantiateContainer(data);
-                                safeInsertData(itemsInGroup, data.getGroupName().split('.'), subContainerData, data.getGroupType());
-                            });
+                            var containerDatas = container.getDatas();
+                            for (var k = 0; k < containerDatas.length; k++) {
+                                form.addItem(containerDatas[k].name, pciMVC.Model.Item(containerDatas[k]));
+                            }
+                            /*container.getDatas().forEach(function (data) {
+                             form.addItem(data.name, pciMVC.Model.Item(data));
+                             });*/
+                            var subContainers = container.getContainers();
+                            for (var l = 0; i < subContainers.length; l++) {
+                                var subContainerData = instantiateContainer(subContainers[l]);
+                                safeInsertData(itemsInGroup, subContainers[l].getGroupName().split('.'), subContainerData, subContainers[l].getGroupType());
+                            }
+                            /*container.getContainers().forEach(function (data) {
+                             var subContainerData = instantiateContainer(data);
+                             safeInsertData(itemsInGroup, data.getGroupName().split('.'), subContainerData, data.getGroupType());
+                             });*/
                             return itemsInGroup;
                         }
                     };
