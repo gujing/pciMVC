@@ -5,16 +5,6 @@
  * Time: 下午10:22
  */
 (function (root, factory) {
-    /*if (!('forEach' in Array.prototype)) {
-     Array.prototype.forEach = function (action, that */
-    /*opt*/
-    /*) {
-     for (var i = 0, n = this.length; i < n; i++)
-     if (i in this)
-     action.call(that, this[i], i, this);
-     };
-     }*/
-    // add forEach method for the browser not support that
     root.pciMVC = factory();
 }(this, function () {
 
@@ -136,7 +126,7 @@
             var dateInputTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
             var dateSpanTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}"/>';
             var selectorTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
-            var areaSelectorTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
+            var areaSelectorTemplate = '<label id="label_{{:id}}">{{:desc}}</label><span id="dom_{{:id}}" />';
             var radioTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
             var autoTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
             var buttonTemplate = '<span id="button_{{:id}}" />';
@@ -400,12 +390,9 @@
                                 widgetContent += template.render('li', liDic);
                             }
                             PJF.html.append(el, widgetContent);
-                            for (var j = 0; j < subContainer.length; j++) {
-                                subContainer[j].insertHtmlDom();
-                            }
-                            /*subContainer.forEach(function (container) {
-                             container.insertHtmlDom();
-                             });*/
+                            pciMVC.Util.each(subContainer, function (container) {
+                                container.insertHtmlDom();
+                            });
                         },
 
                         instantiate: function (fn) {
@@ -444,7 +431,8 @@
                             return data;
                         },
                         containerStyle: {'li_class': '', 'li_style': ''},
-                        assistButtons: {}
+                        assistButtons: {},
+                        initedAssistButtons: {}
                     };
                     if (attr['pjfAttr']) {
                         var attrs = mergeAttr(defaultAttr, attr);
@@ -460,24 +448,21 @@
                             attrs['containerStyle'] = {'li_class': 'width_auto', 'li_style': ''};
                         }
 
-                        for (var j = 0; j < attr['buttons'].length; j++) {
-                            var button = attr['buttons'][j];
+                        pciMVC.Util.each(attrs['buttons'], function (button) {
+                            var buttonId = id_generate();
                             if (button['type'] === 'defined') {
-                                attrs['assistButtons'][id_generate()] = {desc: button['desc'], onclick: button['onclick']}
+                                attrs['assistButtons'][buttonId] = {desc: button['desc'], onclick: button['onclick']}
                             } else {
-                                attrs['assistButtons'][id_generate()] = deviceButtonCreater.createButton(button['type'], button['successful'], button['failure'], button['additionAttr']);
+                                attrs['assistButtons'][buttonId] = deviceButtonCreater.createButton(button['type'], button['successful'], button['failure'], button['additionAttr']);
                             }
-                        }
+                            attrs['assistButtons'][buttonId]['id'] = button['id'] || buttonId;
+                        });
 
-                        /*attr['buttons'].forEach(function (button) {
-                         if (button['type'] === 'defined') {
-                         attrs['assistButtons'][id_generate()] = {desc: button['desc'], onclick: button['onclick']}
-                         } else {
-                         attrs['assistButtons'][id_generate()] = deviceButtonCreater.createButton(button['type'], button['successful'], button['failure'], button['additionAttr']);
-                         }
-                         })*/
                     }
                     return {
+                        getAssistButtonById: function (id) {
+                            return attrs['initedAssistButtons'][id];
+                        },
                         getWidgetId: function () {
                             return attrs['id'];
                         },
@@ -516,6 +501,7 @@
                                         button.enable();
                                     }
                                 }(button['onclick'], thisButton)));
+                                attrs['initedAssistButtons'][button['id']] = thisButton;
                             }
                             attrs.initialize();
                         },
@@ -687,62 +673,32 @@
                         var itemsInGroup = {};
                         if (typeof container.getGroupName() === 'string') {
                             container.instantiate(function (parsedWidget) {
-                                var keyItems = parsedWidget.parseItemsWithKey();
-                                for (var j = 0; j < keyItems.length; j++) {
-                                    var keyItem = keyItems[j];
+                                pciMVC.Util.each(parsedWidget.parseItemsWithKey(), function (keyItem) {
                                     safeInsertData(itemsInGroup, keyItem['key'].split('.'), keyItem['value']);
-                                }
-
-                                /*parsedWidget.parseItemsWithKey().forEach(function (keyItem) {
-                                 safeInsertData(itemsInGroup, keyItem['key'].split('.'), keyItem['value']);
-                                 });*/
+                                });
                             });
-                            var containerDatas_g = container.getDatas();
-                            for (var k_g = 0; k_g < containerDatas_g.length; k_g++) {
-                                safeInsertData(itemsInGroup, containerDatas_g[k_g].name.split('.'), pciMVC.Model.Item(containerDatas_g[k_g]));
-                            }
-                            /*container.getDatas().forEach(function (data) {
-                             safeInsertData(itemsInGroup, data.name.split('.'), pciMVC.Model.Item(data));
-                             });*/
-                            var subContainers_g = container.getContainers();
-                            for (var l_g = 0; i < subContainers_g.length; l_g++) {
-                                var subContainerData_g = instantiateContainer(subContainers_g[l_g]);
-                                safeInsertData(itemsInGroup, subContainers_g[l_g].getGroupName().split('.'), subContainerData_g, subContainers_g[l_g].getGroupType());
-                            }
-                            /*container.getContainers().forEach(function (data) {
-                             var subContainerData = instantiateContainer(data);
-                             safeInsertData(itemsInGroup, data.getGroupName().split('.'), subContainerData, data.getGroupType());
-                             });*/
-//                            form.addItemByGroup(container.getGroupName(), itemsInGroup);
+                            pciMVC.Util.each(container.getDatas(), function (data) {
+                                safeInsertData(itemsInGroup, data.name.split('.'), pciMVC.Model.Item(data));
+                            });
+                            pciMVC.Util.each(container.getContainers(), function (data) {
+                                var subContainerData = instantiateContainer(data);
+                                safeInsertData(itemsInGroup, data.getGroupName().split('.'), subContainerData, data.getGroupType());
+                            });
+
                             return itemsInGroup;
                         } else {
                             container.instantiate(function (parsedWidget) {
-                                var keyItems = parsedWidget.parseItemsWithKey();
-                                for (var j = 0; j < keyItems.length; j++) {
-                                    var keyItem = keyItems[j];
+                                pciMVC.Util.each(parsedWidget.parseItemsWithKey(),function (keyItem) {
                                     form.addItem(keyItem['key'], keyItem['value']); //将widget放在Item存入Form
-                                }
-
-                                /*parsedWidget.parseItemsWithKey().forEach(function (keyItem) {
-                                 form.addItem(keyItem['key'], keyItem['value']); //将widget放在Item存入Form
-                                 });*/
+                                });
                             });
-                            var containerDatas = container.getDatas();
-                            for (var k = 0; k < containerDatas.length; k++) {
-                                form.addItem(containerDatas[k].name, pciMVC.Model.Item(containerDatas[k]));
-                            }
-                            /*container.getDatas().forEach(function (data) {
-                             form.addItem(data.name, pciMVC.Model.Item(data));
-                             });*/
-                            var subContainers = container.getContainers();
-                            for (var l = 0; i < subContainers.length; l++) {
-                                var subContainerData = instantiateContainer(subContainers[l]);
-                                safeInsertData(itemsInGroup, subContainers[l].getGroupName().split('.'), subContainerData, subContainers[l].getGroupType());
-                            }
-                            /*container.getContainers().forEach(function (data) {
-                             var subContainerData = instantiateContainer(data);
-                             safeInsertData(itemsInGroup, data.getGroupName().split('.'), subContainerData, data.getGroupType());
-                             });*/
+                            pciMVC.Util.each(container.getDatas(),function (data) {
+                                form.addItem(data.name, pciMVC.Model.Item(data));
+                            });
+                            pciMVC.Util.each(container.getContainers(),function (data) {
+                                var subContainerData = instantiateContainer(data);
+                                safeInsertData(itemsInGroup, data.getGroupName().split('.'), subContainerData, data.getGroupType());
+                            });
                             return itemsInGroup;
                         }
                     };
@@ -965,6 +921,47 @@
                     return widgetStorage[id];
                 },
                 mergeJsonObject: mergeJsonObject,
+                each: function (obj, callback, args) {
+                    var value,
+                        i = 0,
+                        length = obj.length,
+                        isArray = obj instanceof Array;
+
+                    if (args) {
+                        if (isArray) {
+                            for (; i < length; i++) {
+                                value = callback.apply(obj[ i ], args);
+                                if (value === false) {
+                                    break;
+                                }
+                            }
+                        } else {
+                            for (i in obj) {
+                                value = callback.apply(obj[ i ], args);
+                                if (value === false) {
+                                    break;
+                                }
+                            }
+                        }
+                    } else {
+                        if (isArray) {
+                            for (; i < length; i++) {
+                                value = callback.call(obj[ i ], obj[ i ], i);
+                                if (value === false) {
+                                    break;
+                                }
+                            }
+                        } else {
+                            for (i in obj) {
+                                value = callback.call(obj[ i ], obj[ i ], i);
+                                if (value === false) {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    return obj;
+                },
                 UnitTest: function (config) {
                     //保存错误信息
                     var errorMsg = new Array();
