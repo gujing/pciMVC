@@ -354,10 +354,12 @@
                     var id = id_generate();
                     var data_list = [];
                     var subContainer = [];
+                    var children = [];
 
                     return {
                         addContainer: function (container) {
                             subContainer.push(container);
+                            children.push({data:container,type:'container'});
                         },
                         getContainers: function () {
                             return subContainer;
@@ -375,24 +377,32 @@
                         },
                         addWidget: function (widget) {
                             widget_list.push(widget);
+                            children.push({data:widget,type:'widget'});
                             return widget;
                         },
 
                         insertHtmlDom: function () {
-                            var widgetContent = "";
-                            for (var i = 0; i < widget_list.length; i++) {
-                                var widget = widget_list[i];
-                                var liDic = widget.getContainerStyle();
-                                liDic['id'] = widget.getWidgetId();
-                                liDic['content'] = widget.extractHtmlContent();
-                                widgetContent += template.render('li', liDic);
-                            }
-                            PJF.html.append(el, widgetContent);
-                            pciMVC.Util.each(subContainer, function (container) {
-                                container.insertHtmlDom();
-                            });
-                        },
 
+                            PJF.html.append(el, this.getHtmlDom());
+
+                        },
+                        getHtmlDom: function () {
+                            var widgetContent = "";
+                            for (var i = 0; i < children.length; i++) {
+                                if (children[i]['type'] === 'widget') {
+                                    var child = children[i]['data'];
+                                    var liDic = child.getContainerStyle();
+                                    liDic['id'] = child.getWidgetId();
+                                    liDic['content'] = child.extractHtmlContent();
+                                    widgetContent += template.render('li', liDic);
+                                }
+                                if (children[i]['type'] === 'container') {
+                                    widgetContent += children[i]['data'].getHtmlDom();
+                                }
+
+                            }
+                            return widgetContent;
+                        },
                         instantiate: function (fn) {
                             for (var i = 0; i < widget_list.length; i++) {
                                 var widget = widget_list[i];
@@ -686,14 +696,14 @@
                             return itemsInGroup;
                         } else {
                             container.instantiate(function (parsedWidget) {
-                                pciMVC.Util.each(parsedWidget.parseItemsWithKey(),function (keyItem) {
+                                pciMVC.Util.each(parsedWidget.parseItemsWithKey(), function (keyItem) {
                                     form.addItem(keyItem['key'], keyItem['value']); //将widget放在Item存入Form
                                 });
                             });
-                            pciMVC.Util.each(container.getDatas(),function (data) {
+                            pciMVC.Util.each(container.getDatas(), function (data) {
                                 form.addItem(data.name, pciMVC.Model.Item(data));
                             });
-                            pciMVC.Util.each(container.getContainers(),function (data) {
+                            pciMVC.Util.each(container.getContainers(), function (data) {
                                 var subContainerData = instantiateContainer(data);
                                 safeInsertData(itemsInGroup, data.getGroupName().split('.'), subContainerData, data.getGroupType());
                             });
@@ -761,7 +771,7 @@
                     };
 
                     var setItemValue = function (items, object) {
-                        if(items){
+                        if (items) {
                             for (var key in object) {
                                 if (isPureObject(object[key])) {
                                     setItemValue(items[key], object[key]);
