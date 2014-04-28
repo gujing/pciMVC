@@ -55,7 +55,6 @@
                     }
                     return {
                         desc: button.desc, onclick: function (that) {
-                            //this.disabled();
                             try {
                                 var res = button.deviceFunc(additionAttr);
                                 if (res[0] == 0) {
@@ -68,7 +67,6 @@
                                     }
                                 }
                             } catch (e) {
-                                //this.enabled();
                                 throw e;
                             }
 
@@ -107,7 +105,7 @@
                                 clcd: that['pjfAttr'].clcd,
                                 async: false,
                                 success: function (data) {
-                                    that['pjfAttr']['data'] = reformatStandCode(data, 'auto');
+                                    that['pjfAttr']['lookup'] = reformatStandCode(data, 'auto');
                                 }
                             });
                         }
@@ -523,15 +521,15 @@
                             try {
                                 return attrs['widget'].getValue();
                             } catch (e) {
-                                throw new Error(attrs['type'] + attrs['id'] + ' has no method getValue');
+                                throw new Error(attrs['type'] + attrs['id'] + ' can not execute getValue ' + e);
                             }
 
                         },
                         setValue: function (data) {
                             try {
-                                attrs['widget']['setValue'](data);
+                                attrs['widget'].setValue(data);
                             } catch (e) {
-                                throw new Error(attrs['type'] + attrs['id'] + ' has no method setValue');
+                                throw new Error(attrs['type'] + attrs['id'] + ' can not execute setValue ' + e);
                             }
                         },
                         parseItemsWithKey: function () {
@@ -763,21 +761,23 @@
                     };
 
                     var setItemValue = function (items, object) {
-                        for (var key in object) {
-                            if (isPureObject(object[key])) {
-                                setItemValue(items[key], object[key]);
-                            } else if (object[key] instanceof Array && items[key] instanceof Array) {
-                                for (var i = 0; i < object[key].length; i++) {
-                                    var obj = object[key][i];
-                                    if (obj instanceof Object) {
-                                        setItemValue(items[key][i], obj);
-                                    } else {
-                                        safeSetValue(items[key][i], obj);
-                                    }
+                        if(items){
+                            for (var key in object) {
+                                if (isPureObject(object[key])) {
+                                    setItemValue(items[key], object[key]);
+                                } else if (object[key] instanceof Array && items[key] instanceof Array) {
+                                    for (var i = 0; i < object[key].length; i++) {
+                                        var obj = object[key][i];
+                                        if (obj instanceof Object) {
+                                            setItemValue(items[key][i], obj);
+                                        } else {
+                                            safeSetValue(items[key][i], obj);
+                                        }
 
+                                    }
+                                } else {
+                                    safeSetValue(items[key], object[key]);
                                 }
-                            } else {
-                                safeSetValue(items[key], object[key]);
                             }
                         }
                     };
