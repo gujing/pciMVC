@@ -383,7 +383,11 @@ sup {
 <tbody>
 <tr>
 <td>type</td>
-<td>按钮类型，自定义为<code>defined</code>，其他为封装的外设包括</td>
+<td>按钮类型，自定义为<code>defined</code>，其他为封装的外设包括<code>card</code>划卡，<code>IcCard</code>划IC卡,<code>IdCard</code>读身份证</td>
+</tr>
+<tr>
+<td>id</td>
+<td>(可选)用于通过widget组件的getAssistButtonById方法获取辅助按钮</td>
 </tr>
 <tr>
 <td>desc</td>
@@ -590,6 +594,12 @@ sup {
 <td>id</td>
 <td><code>id</code>为widget定义时id属性的值</td>
 <td><code>var widget = pciMVC.Util.getWidgetById('cstNameInput');</code></td>
+</tr>
+<tr>
+<td>each</td>
+<td>obj,callback,args</td>
+<td>对数组或对象中的属性进行遍历操作</td>
+<td><code>pciMVC.Util.each(container.getDatas(), function (data) {safeInsertData(itemsInGroup, data.name.split('.'), pciMVC.Model.Item(data));});</code></td>
 </tr>
 </tbody>
 </table>

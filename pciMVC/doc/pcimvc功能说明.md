@@ -78,7 +78,8 @@ button为widget辅助按钮的属性
 
 属性名|说明
 ----|--
-type|按钮类型，自定义为`defined`，其他为封装的外设包括
+type|按钮类型，自定义为`defined`，其他为封装的外设包括`card`划卡，`IcCard`划IC卡,`IdCard`读身份证
+id|(可选)用于通过widget组件的getAssistButtonById方法获取辅助按钮
 desc|按钮显示的文字描述，类型为`defined`时有效
 onclick|按钮点击的事件，具有参数`field`指向当前的widget，类型为`defined`时有效
 successful|外设调用成功的回调函数，参数`field`指向当前的widget，参数`res`为外设调用返回的结果
@@ -135,3 +136,4 @@ execute|funcname|widget类型特有方法，用于执行组件方法，`funcname
 ----|---|--|
 createNamespace|context,namespace|`context`为需要创建命名空间的根对象，`namespace`为命名空间层级描述。方法返回创建的命名空间|`var root = pciMVC.Util.createNamespace(window, 'pci.test.MVCTest');`
 getWidgetById|id|`id`为widget定义时id属性的值|`var widget = pciMVC.Util.getWidgetById('cstNameInput');`
+each|obj,callback,args|对数组或对象中的属性进行遍历操作|`pciMVC.Util.each(container.getDatas(), function (data) {safeInsertData(itemsInGroup, data.name.split('.'), pciMVC.Model.Item(data));});`
