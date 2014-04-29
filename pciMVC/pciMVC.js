@@ -17,7 +17,9 @@
             'auto': PJF.ui.autoComplete,
             'radio': PJF.ui.radio,
             'dateSpan': PJF.ui.dateSpan,
-            'areaSelector': PJF.ui.areaSelector
+            'areaSelector': PJF.ui.areaSelector,
+            'checkBox': PJF.ui.checkbox,
+            'passwordField': PJF.ui.textfield
         };
 
         var deviceButtonCreater = (function () {
@@ -41,6 +43,12 @@
                 }},
                 'test': {desc: '测试外设', deviceFunc: function (additionAttr) {
                     return [0, '测试成功'];
+                }},
+                'password': {desc: '密码', deviceFunc: function (additionAttr) {
+                    return PJF.communication.client.getAccountPassword();
+                }},
+                'bankBook': {desc: '存折', deviceFunc: function (additionAttr) {
+                    return PJF.communication.client.getAccountPassword();
                 }}
             };
 
@@ -128,6 +136,8 @@
             var radioTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
             var autoTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
             var buttonTemplate = '<span id="button_{{:id}}" />';
+            var checckBoxTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}"/>';
+            var pssswordFieldTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="password"/>';
 
 
             var liTemplate = '<li id="{{:id}}_container" class="{{:li_class}}" style="{{:li_style}}">{{:content}}</li>';
@@ -141,6 +151,8 @@
             templateMap['radio'] = radioTemplate;
             templateMap['li'] = liTemplate;
             templateMap['button'] = buttonTemplate;
+            templateMap['checkBox'] = checckBoxTemplate;
+            templateMap['passwordField'] = pssswordFieldTemplate;
 
             return {
                 render: function (name, dict) {
@@ -205,13 +217,13 @@
 
         };
 
-        var mergeJsonObject = function (obj, toMergeObj) {
+        var deepMergeObject = function (obj, toMergeObj) {
             if (isPureObject(obj) && isPureObject(toMergeObj)) {
                 for (var el in toMergeObj) {
                     if (obj[el] === undefined) {
                         obj[el] = toMergeObj[el];
                     } else if (isPureObject(obj[el]) && isPureObject(toMergeObj[el])) {
-                        mergeJsonObject(obj[el], toMergeObj[el]);
+                        deepMergeObject(obj[el], toMergeObj[el]);
                     } else {
                         throw '属性' + el + '冲突';
                     }
@@ -930,7 +942,12 @@
                 getWidgetById: function (id) {
                     return widgetStorage[id];
                 },
-                mergeJsonObject: mergeJsonObject,
+                mergeJsonObject: function (root) {
+                    for (var i = 1; i < arguments.length; i++) {
+                        deepMergeObject(root, arguments[i]);
+                    }
+                    return root;
+                },
                 each: function (obj, callback, args) {
                     var value,
                         i = 0,
