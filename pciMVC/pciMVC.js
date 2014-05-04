@@ -7,6 +7,7 @@
 (function (root, factory) {
     root.pciMVC = factory();
     var adapter;
+    //new
 }(this, function () {
 
         var widgetStorage = {};
