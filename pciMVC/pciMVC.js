@@ -5,8 +5,13 @@
  * Time: 下午10:22
  */
 (function (root, factory) {
-    root.pciMVC = factory();
-}(this, function () {
+    var config = {
+        templateFileConfig: [
+
+        ]
+    };
+    root.pciMVC = factory(config);
+}(this, function (config) {
 
         var widgetStorage = {};
 
@@ -19,7 +24,8 @@
             'dateSpan': PJF.ui.dateSpan,
             'areaSelector': PJF.ui.areaSelector,
             'checkBox': PJF.ui.checkbox,
-            'passwordField': PJF.ui.textfield
+            'passwordField': PJF.ui.textfield,
+            'dateCheckBox': PJF.ui.dateSpan
         };
 
         var deviceButtonCreater = (function () {
@@ -118,49 +124,27 @@
                             });
                         }
                     };
+                case 'dateCheckBox':
+                    return function () {
+                        var that = this;
+
+                        var checkBox = new PJF.ui.checkbox({
+                            labels: that['pjfAttr'].labels,
+                            values: that['pjfAttr'].values,
+                            name: 'checkBoxName',
+                            dom: 'dom_checkbox_' + that['id'],
+                            handler: function () {
+                                that['pjfAttr'].handler(checkBox.getValue());
+                            }
+                        })
+
+                    };
                 default :
                     return function () {
                     }
             }
 
         };
-
-        var template = (function () {
-            var templateMap = {};
-
-            var textFieldTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
-            var dateInputTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
-            var dateSpanTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}"/>';
-            var selectorTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
-            var areaSelectorTemplate = '<label id="label_{{:id}}">{{:desc}}</label><span id="dom_{{:id}}" />';
-            var radioTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
-            var autoTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
-            var buttonTemplate = '<span id="button_{{:id}}" />';
-            var checckBoxTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}"/>';
-            var pssswordFieldTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="password"/>';
-
-
-            var liTemplate = '<li id="{{:id}}_container" class="{{:li_class}}" style="{{:li_style}}">{{:content}}</li>';
-
-            templateMap['textfield'] = textFieldTemplate;
-            templateMap['dateinput'] = dateInputTemplate;
-            templateMap['dateSpan'] = dateSpanTemplate;
-            templateMap['selector'] = selectorTemplate;
-            templateMap['areaSelector'] = areaSelectorTemplate;
-            templateMap['auto'] = autoTemplate;
-            templateMap['radio'] = radioTemplate;
-            templateMap['li'] = liTemplate;
-            templateMap['button'] = buttonTemplate;
-            templateMap['checkBox'] = checckBoxTemplate;
-            templateMap['passwordField'] = pssswordFieldTemplate;
-
-            return {
-                render: function (name, dict) {
-                    var template = templateMap[name];
-                    return PJF.html.template(template, dict);
-                }
-            }
-        }());
 
         var id_generate = function () {
             return (new Date().getTime()) + '_' + Math.random().toString().substr(2, 5);
@@ -349,6 +333,60 @@
             return object instanceof Object && !(object instanceof Array) && !(object instanceof Function);
         };
 
+        var template = (function () {
+            var templateMap = {};
+
+            var textFieldTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
+            var dateInputTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
+            var dateSpanTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}"/>';
+            var selectorTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
+            var areaSelectorTemplate = '<label id="label_{{:id}}">{{:desc}}</label><span id="dom_{{:id}}" />';
+            var radioTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}" />';
+            var autoTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="text"/>';
+            var buttonTemplate = '<span id="button_{{:id}}" />';
+            var checckBoxTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}"/>';
+            var pssswordFieldTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><input id="dom_{{:id}}" type="password"/>';
+            var dateCheckBoxTemplate = '<label id="label_{{:id}}">{{:desc}}:</label><span id="dom_{{:id}}"/>&nbsp;<span id="dom_checkbox_{{:id}}"/>';
+
+
+            var liTemplate = '<li id="{{:id}}_container" class="{{:li_class}}" style="{{:li_style}}">{{:content}}</li>';
+
+            templateMap['textfield'] = textFieldTemplate;
+            templateMap['dateinput'] = dateInputTemplate;
+            templateMap['dateSpan'] = dateSpanTemplate;
+            templateMap['selector'] = selectorTemplate;
+            templateMap['areaSelector'] = areaSelectorTemplate;
+            templateMap['auto'] = autoTemplate;
+            templateMap['radio'] = radioTemplate;
+            templateMap['li'] = liTemplate;
+            templateMap['button'] = buttonTemplate;
+            templateMap['checkBox'] = checckBoxTemplate;
+            templateMap['passwordField'] = pssswordFieldTemplate;
+            templateMap['dateCheckBox'] = dateCheckBoxTemplate;
+
+            for (var i = 0; i < config.templateFileConfig.length; i++) {
+                var templateFile = config.templateFileConfig[i];
+                $.ajax({
+                    async: false,
+                    url: templateFile,
+                    success: function (data) {
+                        var templateData = eval(data);
+                        deepMergeObject(templateMap, templateData);
+                    },
+                    failure: function () {
+                        throw new Error("template" + templateFile + " not exist");
+                    }
+                });
+            }
+
+            return {
+                render: function (name, dict) {
+                    var template = templateMap[name];
+                    return PJF.html.template(template, dict);
+                }
+            }
+        }());
+
         return {
             View: {
                 UlContent: function (attr) {
@@ -371,7 +409,7 @@
                     return {
                         addContainer: function (container) {
                             subContainer.push(container);
-                            children.push({data:container,type:'container'});
+                            children.push({data: container, type: 'container'});
                         },
                         getContainers: function () {
                             return subContainer;
@@ -389,7 +427,7 @@
                         },
                         addWidget: function (widget) {
                             widget_list.push(widget);
-                            children.push({data:widget,type:'widget'});
+                            children.push({data: widget, type: 'widget'});
                             return widget;
                         },
 
@@ -584,6 +622,25 @@
                                     keyItems.push({key: countyName, value: pciMVC.Model.Item({'widget': this, 'setValue': countySetFunc, 'getValue': countyGetFunc})});
                                     break;
                                 case 'dateSpan':
+                                    var preName = attrs['pjfAttr']['inputNames'][0];
+                                    var preSetFunc = function (data) {
+                                        attrs['widget'].setPreValue(data);
+                                    };
+                                    var preGetFunc = function () {
+                                        return attrs['widget'].getPreValue();
+                                    };
+                                    keyItems.push({key: preName, value: pciMVC.Model.Item({'widget': this, 'setValue': preSetFunc, 'getValue': preGetFunc})});
+                                    var nextName = attrs['pjfAttr']['inputNames'][1];
+                                    var nextSetFunc = function (data) {
+                                        attrs['widget'].setNextValue(data);
+                                    };
+                                    var nextGetFunc = function () {
+                                        return attrs['widget'].getNextValue();
+                                    };
+                                    keyItems.push({key: nextName, value: pciMVC.Model.Item({'widget': this, 'setValue': nextSetFunc, 'getValue': nextGetFunc})});
+                                    break;
+
+                                case 'dateCheckBox':
                                     var preName = attrs['pjfAttr']['inputNames'][0];
                                     var preSetFunc = function (data) {
                                         attrs['widget'].setPreValue(data);
@@ -948,6 +1005,13 @@
                     }
                     return root;
                 },
+                getParameterByName: function (name) {
+                    name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
+                    var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
+                        results = regex.exec(location.search);
+                    console.log(results);
+                    return results == null ? undefined : decodeURIComponent(results[1].replace(/\+/g, " "));
+                },
                 each: function (obj, callback, args) {
                     var value,
                         i = 0,
@@ -1092,6 +1156,11 @@
                     } else {
                         config.callback("回调函数数据");
                     }
+                },
+                //柜外清函数
+                TransInfoConfirm: function (transId, data) {
+                    console.log(template.render(transId, data));
+                    return template.render(transId, data);
                 }
             }
         }
